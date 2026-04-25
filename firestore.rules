@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- গ্লোবাল ডিফল্ট: সবকিছু বন্ধ ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- হেল্পার ফাংশন ---
+    function isSignedIn() { return request.auth != null; }
+    function isEmailVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    // প্রোফাইল থেকে রোল চেক করা (বড় হাতের অক্ষরে কোড অনুযায়ী)
+    function getUserData() { 
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data; 
+    }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'doctorapp0p@gmail.com' || 
+        getUserData().role == 'ADMIN'
+      ); 
+    }
+    function isDoctor() { return isSignedIn() && getUserData().role == 'DOCTOR'; }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- প্রোফাইল রুলস ---
+    match /profiles/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && incoming().role == 'PATIENT' && incoming().status == 'active';
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'phone'])
+      );
+    }
+
+    // --- অ্যাপ সেটিংস ---
+    match /settings/{settingId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+
+    // --- ডাক্তার, হাসপাতাল এবং ল্যাব টেস্ট লিস্ট (Plural as per code) ---
+    match /doctors/{doctorId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+    match /hospitals/{hospitalId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /lab_tests/{testId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- প্রেসক্রিপশন রুলস ---
+    match /prescriptions/{prescriptionId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.patient_id || 
+        request.auth.uid == resource.data.doctor_id || 
+        isAdmin()
+      );
+      allow create: if isDoctor() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // --- অর্ডার রুলস ---
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (existing().user_id == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified() && incoming().user_id == request.auth.uid;
+      allow update: if isAdmin() || (
+        isSignedIn() && existing().user_id == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['sender_name', 'sender_contact', 'trx_id', 'payment_method'])
+      );
+      allow delete: if isAdmin();
+    }
+  }
+}

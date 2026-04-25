@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "full_name": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["PATIENT", "DOCTOR", "ADMIN"] },
+        "status": { "type": "string", "enum": ["active", "pending", "suspended"] }
+      },
+      "required": ["id", "full_name", "role", "status"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "description": "Doctor information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "degree": { "type": "string" },
+        "specialty": { "type": "string" },
+        "districts": { "type": "array", "items": { "type": "string" } },
+        "clinics": { "type": "array", "items": { "type": "string" } },
+        "schedule": { "type": "string" },
+        "availableToday": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "image": { "type": "string" },
+        "isVideoConsultant": { "type": "boolean" },
+        "consultationFee": { "type": "number" }
+      },
+      "required": ["id", "name", "specialty", "districts", "clinics"]
+    },
+    "Hospital": {
+      "title": "Hospital",
+      "description": "Hospital/Clinic information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "district": { "type": "string" },
+        "address": { "type": "string" },
+        "doctors": { "type": "array", "items": { "type": "string" } },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "name", "district", "address"]
+    },
+    "LabTest": {
+      "title": "LabTest",
+      "description": "Lab test information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" }
+      },
+      "required": ["id", "name", "price"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Healthcare service orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "user_id": { "type": "string" },
+        "user_email": { "type": "string" },
+        "item_name": { "type": "string" },
+        "amount": { "type": "number" },
+        "shipping": { "type": "number" },
+        "payment_method": { "type": "string" },
+        "payment_type": { "type": "string", "enum": ["online", "offline"] },
+        "sender_name": { "type": "string" },
+        "sender_contact": { "type": "string" },
+        "trx_id": { "type": "string" },
+        "hospital_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "verified", "processing", "completed", "cancelled"] }
+      },
+      "required": ["user_id", "item_name", "amount", "status"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Medical prescriptions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "patient_id": { "type": "string" },
+        "patient_name": { "type": "string" },
+        "doctor_id": { "type": "string" },
+        "doctor_name": { "type": "string" },
+        "doctor_specialty": { "type": "string" },
+        "medicines": { "type": "string" },
+        "notes": { "type": "string" },
+        "next_visit_date": { "type": "string" }
+      },
+      "required": ["patient_id", "doctor_id", "medicines"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Application settings",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["key", "value"]
+    }
+  },
+  "firestore": {
+    "/profiles/{profileId}": {
+      "schema": "Profile",
+      "description": "User profiles"
+    },
+    "/doctors/{doctorId}": {
+      "schema": "Doctor",
+      "description": "Doctors list"
+    },
+    "/hospitals/{hospitalId}": {
+      "schema": "Hospital",
+      "description": "Hospitals and Clinics"
+    },
+    "/lab_tests/{testId}": {
+      "schema": "LabTest",
+      "description": "Laboratory tests"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/prescriptions/{prescriptionId}": {
+      "schema": "Prescription",
+      "description": "Patient prescriptions"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Global app settings"
+    }
+  }
+}
