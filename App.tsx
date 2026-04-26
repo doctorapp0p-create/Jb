@@ -9,7 +9,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut,
-  updateProfile
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { 
   collection, 
@@ -218,7 +220,19 @@ const DownloadFAB: React.FC = () => {
 };
 
 // --- Admin Dashboard Component ---
-const AdminDashboard: React.FC<{ profile: Profile, onLogout: () => void, ticker: string, setTicker: (val: string) => void, onUpdateTicker: () => void }> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker }) => {
+const AdminDashboard: React.FC<{ 
+  profile: Profile, 
+  onLogout: () => void, 
+  ticker: string, 
+  setTicker: (val: string) => void, 
+  onUpdateTicker: () => void,
+  doctors: Doctor[],
+  hospitals: Hospital[],
+  labTests: LabTest[],
+  onAdd: (type: 'doctor' | 'hospital' | 'lab_test') => void,
+  onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
+  onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void
+}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, onAdd, onEdit, onDelete }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -263,11 +277,11 @@ const AdminDashboard: React.FC<{ profile: Profile, onLogout: () => void, ticker:
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
                  <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Total Specialists</p>
-                 <p className="text-3xl font-black text-slate-800">{DOCTORS.length}</p>
+                 <p className="text-3xl font-black text-slate-800">{doctors.length}</p>
               </div>
               <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
-                 <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Districts</p>
-                 <p className="text-3xl font-black text-slate-800">{DISTRICTS.length}</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Hospitals</p>
+                 <p className="text-3xl font-black text-slate-800">{hospitals.length}</p>
               </div>
             </div>
 
@@ -300,10 +314,10 @@ const AdminDashboard: React.FC<{ profile: Profile, onLogout: () => void, ticker:
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
             <div className="flex justify-between items-center">
                <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Specialists List</h2>
-               <Button variant="success" className="px-6 py-2 rounded-xl text-[10px]">Add New</Button>
+               <Button onClick={() => onAdd('doctor')} variant="success" className="px-6 py-2 rounded-xl text-[10px]">Add New</Button>
             </div>
             <div className="space-y-4">
-              {DOCTORS.map(d => (
+              {doctors.map(d => (
                 <div key={d.id} className="bg-white p-4 rounded-[32px] border border-slate-100 flex justify-between items-center shadow-sm">
                   <div className="flex items-center gap-4">
                     <img src={d.image} className="w-12 h-12 rounded-2xl object-cover" referrerPolicy="no-referrer" />
@@ -313,8 +327,62 @@ const AdminDashboard: React.FC<{ profile: Profile, onLogout: () => void, ticker:
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"><Zap size={14} /></button>
-                    <button className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all"><X size={14} /></button>
+                    <button onClick={() => onEdit('doctor', d)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"><Zap size={14} /></button>
+                    <button onClick={() => onDelete('doctor', d.id)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all"><X size={14} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'hospitals' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+            <div className="flex justify-between items-center">
+               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Clinics List</h2>
+               <Button onClick={() => onAdd('hospital')} variant="success" className="px-6 py-2 rounded-xl text-[10px]">Add New</Button>
+            </div>
+            <div className="space-y-4">
+              {hospitals.map(h => (
+                <div key={h.id} className="bg-white p-4 rounded-[32px] border border-slate-100 flex justify-between items-center shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <img src={h.image} className="w-12 h-12 rounded-2xl object-cover" referrerPolicy="no-referrer" />
+                    <div>
+                      <p className="text-sm font-black text-slate-800 leading-tight">{h.name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">{h.address}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => onEdit('hospital', h)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"><Zap size={14} /></button>
+                    <button onClick={() => onDelete('hospital', h.id)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all"><X size={14} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'labtests' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+            <div className="flex justify-between items-center">
+               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Lab Tests List</h2>
+               <Button onClick={() => onAdd('lab_test')} variant="success" className="px-6 py-2 rounded-xl text-[10px]">Add New</Button>
+            </div>
+            <div className="space-y-4">
+              {labTests.map(t => (
+                <div key={t.id} className="bg-white p-4 rounded-[32px] border border-slate-100 flex justify-between items-center shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                      <Microscope size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-800 leading-tight">{t.name}</p>
+                      <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">৳{t.price}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => onEdit('lab_test', t)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"><Zap size={14} /></button>
+                    <button onClick={() => onDelete('lab_test', t.id)} className="p-2 bg-slate-100 rounded-xl text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all"><X size={14} /></button>
                   </div>
                 </div>
               ))}
@@ -710,7 +778,7 @@ export default function App() {
                   id: firebaseUser.uid,
                   full_name: firebaseUser.displayName || 'User',
                   phone: '',
-                  role: UserRole.PATIENT,
+                  role: firebaseUser.email === 'doctorapp0p@gmail.com' ? UserRole.ADMIN : UserRole.PATIENT,
                   status: 'active'
                 };
                 await setDoc(profileRef, newProf);
@@ -906,6 +974,50 @@ export default function App() {
     finally { setIsProcessing(false); }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsProcessing(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const { user: firebaseUser } = userCredential;
+
+      const profileRef = doc(db, 'profiles', firebaseUser.uid);
+      const profileSnap = await getDoc(profileRef);
+      let prof = profileSnap.data() as Profile;
+      
+      const isAdminEmail = firebaseUser.email === 'doctorapp0p@gmail.com';
+      
+      if (!prof) {
+        prof = {
+          id: firebaseUser.uid,
+          full_name: firebaseUser.displayName || 'ইউজার',
+          phone: '',
+          role: isAdminEmail ? UserRole.ADMIN : UserRole.PATIENT,
+          status: 'active'
+        };
+        await setDoc(profileRef, prof);
+      } else if (isAdminEmail && prof.role !== UserRole.ADMIN) {
+        // Force update role if it's the admin email but role is different
+        prof.role = UserRole.ADMIN;
+        await updateDoc(profileRef, { role: UserRole.ADMIN });
+      }
+
+      if (prof?.status === 'pending') {
+        await signOut(auth);
+        throw new Error('আপনার অ্যাকাউন্টটি পেন্ডিং অবস্থায় আছে।');
+      }
+
+      setUser(firebaseUser);
+      setProfile(prof);
+      setShowAuthModal(false);
+    } catch (err: any) {
+      console.error("Google Auth Error:", err);
+      alert("গুগল লগইন এরর: " + (err.message || 'একটি সমস্যা হয়েছে'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const logout = async () => {
     localStorage.removeItem('jb_moderator_session');
     await signOut(auth);
@@ -1071,11 +1183,12 @@ export default function App() {
 
   // --- Data Management Functions ---
   const handleSaveData = async (type: 'doctor' | 'hospital' | 'lab_test', item: any) => {
-    if (!user || profile?.role !== UserRole.ADMIN) return;
+    if (!user || profile?.role !== UserRole.ADMIN) {
+      alert("অ্যাডমিন পারমিশন নেই।");
+      return;
+    }
     setIsProcessing(true);
     try {
-      const itemRef = doc(db, `${type}s`, item.id); // Firestore usually prefers plural collection names but blueprints used plural for some
-      // Rectifying based on blueprint:
       const collectionName = type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'lab_tests';
       await setDoc(doc(db, collectionName, item.id), item, { merge: true });
       
@@ -1084,8 +1197,8 @@ export default function App() {
       setEditingItem(null);
       await fetchData();
     } catch (err: any) {
-      console.error(err);
-      alert('সেভ করা যায়নি।');
+      console.error("Save Error:", err);
+      alert('সেভ করা যায়নি। এরর: ' + err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -1112,7 +1225,14 @@ export default function App() {
   };
 
   const handleDeleteData = async (type: 'doctor' | 'hospital' | 'lab_test', id: string) => {
-    if (!user || profile?.role !== UserRole.ADMIN || !confirm('আপনি কি নিশ্চিত?')) return;
+    if (!user || profile?.role !== UserRole.ADMIN) {
+      alert("অ্যাডমিন পারমিশন নেই।");
+      return;
+    }
+    
+    // Using a simpler confirm or just proceeding if confirm is unreliable in iframes
+    if (!window.confirm('আপনি কি নিশ্চিত যে এটি ডিলিট করতে চান?')) return;
+
     setIsProcessing(true);
     try {
       const collectionName = type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'lab_tests';
@@ -1120,8 +1240,8 @@ export default function App() {
       alert('সফলভাবে ডিলিট হয়েছে!');
       await fetchData();
     } catch (err: any) {
-      console.error(err);
-      alert('ডিলিট করা যায়নি।');
+      console.error("Delete Error:", err);
+      alert('ডিলিট করা যায়নি। এরর: ' + err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -1153,62 +1273,72 @@ export default function App() {
     }
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse">JB HEALTHCARE...</div>;
-
-  if (profile?.role === UserRole.ADMIN) {
-    return (
-      <AdminDashboard 
-        profile={profile} 
-        onLogout={logout} 
-        ticker={tickerMessage} 
-        setTicker={setTickerMessage} 
-        onUpdateTicker={updateTicker} 
-      />
-    );
-  }
+  if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">JB Healthcare...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto relative overflow-hidden shadow-2xl">
+    <div className={profile?.role === UserRole.ADMIN ? "min-h-screen bg-slate-50 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto relative overflow-hidden shadow-2xl"}>
       
-      <AnimatePresence>
-        {showLanding && (
-          <LandingPage onStart={() => {
-            setShowLanding(false);
-            sessionStorage.setItem('jb_landing_seen', 'true');
-          }} />
-        )}
-      </AnimatePresence>
+      {profile?.role === UserRole.ADMIN ? (
+        <AdminDashboard 
+          profile={profile} 
+          onLogout={logout} 
+          ticker={tickerMessage} 
+          setTicker={setTickerMessage} 
+          onUpdateTicker={updateTicker} 
+          doctors={doctors}
+          hospitals={hospitals}
+          labTests={labTests}
+          onAdd={(type) => {
+            setAdminDataTab(type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'tests');
+            setEditingItem({});
+            setTempImage(null);
+            setShowAddModal(true);
+          }}
+          onEdit={(type, item) => {
+            setAdminDataTab(type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'tests');
+            setEditingItem(item);
+            setTempImage(item.image || null);
+            setShowAddModal(true);
+          }}
+          onDelete={handleDeleteData}
+        />
+      ) : (
+        <>
+          <AnimatePresence>
+            {showLanding && (
+              <LandingPage onStart={() => {
+                setShowLanding(false);
+                sessionStorage.setItem('jb_landing_seen', 'true');
+              }} />
+            )}
+          </AnimatePresence>
 
-      <AnimatePresence>
+          {/* Ticker */}
+          <div className="bg-red-600 text-white py-2 overflow-hidden whitespace-nowrap z-50 shadow-md">
+            <div className="animate-marquee inline-block pl-[100%] font-black text-[10px] uppercase tracking-wider">
+              {tickerMessage} • ইমারজেন্সি হেল্পলাইন: ০১৫১৮৩৯৫৭৭২ • 
+            </div>
+          </div>
 
-      </AnimatePresence>
+          <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 border-b flex justify-between items-center shadow-sm">
+            <h1 className="text-xl font-black text-slate-800 tracking-tight cursor-pointer" onClick={() => { setActiveTab('home'); setHomeSubCategory('doctors'); setSelectedHospitalId(null); setSelectedSpecialty(null); }}>
+              <span className="text-blue-600">JB</span> Healthcare
+            </h1>
+            <div className="flex gap-2 items-center">
+               <button onClick={handleShare} className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border-2 border-slate-50 active:scale-90 transition-all" title="Share App">
+                 <Share2 size={16} />
+               </button>
+               {user ? (
+                 <button onClick={logout} className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[11px] font-black border-2 border-blue-50">
+                   {profile?.full_name?.[0].toUpperCase() || '👤'}
+                 </button>
+               ) : (
+                 <button onClick={() => setShowAuthModal(true)} className="text-[10px] font-black uppercase bg-blue-600 text-white px-4 py-2 rounded-xl">লগিন</button>
+               )}
+            </div>
+          </header>
 
-      {/* Ticker */}
-      <div className="bg-red-600 text-white py-2 overflow-hidden whitespace-nowrap z-50 shadow-md">
-        <div className="animate-marquee inline-block pl-[100%] font-black text-[10px] uppercase tracking-wider">
-          {tickerMessage} • ইমারজেন্সি হেল্পলাইন: ০১৫১৮৩৯৫৭৭২ • 
-        </div>
-      </div>
-
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-6 py-4 border-b flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-black text-slate-800 tracking-tight cursor-pointer" onClick={() => { setActiveTab('home'); setHomeSubCategory('doctors'); setSelectedHospitalId(null); setSelectedSpecialty(null); }}>
-          <span className="text-blue-600">JB</span> Healthcare
-        </h1>
-        <div className="flex gap-2 items-center">
-           <button onClick={handleShare} className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border-2 border-slate-50 active:scale-90 transition-all" title="Share App">
-             <Share2 size={16} />
-           </button>
-           {user ? (
-             <button onClick={logout} className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[11px] font-black border-2 border-blue-50">
-               {profile?.full_name?.[0].toUpperCase() || '👤'}
-             </button>
-           ) : (
-             <button onClick={() => setShowAuthModal(true)} className="text-[10px] font-black uppercase bg-blue-600 text-white px-4 py-2 rounded-xl">লগিন</button>
-           )}
-        </div>
-      </header>
-
-      <main className="flex-1 p-6 mobile-p-safe space-y-8 overflow-y-auto no-scrollbar">
+          <main className="flex-1 p-6 mobile-p-safe space-y-8 overflow-y-auto no-scrollbar">
         
         {activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in">
@@ -1677,21 +1807,25 @@ export default function App() {
         )}
       </main>
 
-      {/* Modern Floating Navigation Bar */}
-      <nav className="fixed bottom-6 left-6 right-6 z-50 bg-slate-900/95 backdrop-blur-2xl flex justify-around items-center py-5 rounded-[40px] shadow-2xl border border-white/10 overflow-hidden">
-        <button onClick={() => { setActiveTab('home'); setHomeSubCategory('doctors'); setSelectedHospitalId(null); setSelectedSpecialty(null); }} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'home' ? 'text-blue-400 scale-125' : 'text-slate-500 opacity-60'}`}>
-          <span className="text-2xl drop-shadow-md">🏠</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Home</span>
-        </button>
-        <button onClick={() => setActiveTab('orders')} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'orders' ? 'text-yellow-400 scale-125' : 'text-slate-500 opacity-60'}`}>
-          <span className="text-2xl drop-shadow-md">📜</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Orders</span>
-        </button>
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'profile' ? 'text-fuchsia-400 scale-125' : 'text-slate-500 opacity-60'}`}>
-          <span className="text-2xl drop-shadow-md">👤</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Profile</span>
-        </button>
-      </nav>
+      {profile?.role !== UserRole.ADMIN && (
+        <nav className="fixed bottom-6 left-6 right-6 z-50 bg-slate-900/95 backdrop-blur-2xl flex justify-around items-center py-5 rounded-[40px] shadow-2xl border border-white/10 overflow-hidden">
+          <button onClick={() => { setActiveTab('home'); setHomeSubCategory('doctors'); setSelectedHospitalId(null); setSelectedSpecialty(null); }} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'home' ? 'text-blue-400 scale-125' : 'text-slate-500 opacity-60'}`}>
+            <span className="text-2xl drop-shadow-md">🏠</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Home</span>
+          </button>
+          <button onClick={() => setActiveTab('orders')} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'orders' ? 'text-yellow-400 scale-125' : 'text-slate-500 opacity-60'}`}>
+            <span className="text-2xl drop-shadow-md">📜</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Orders</span>
+          </button>
+          <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === 'profile' ? 'text-fuchsia-400 scale-125' : 'text-slate-500 opacity-60'}`}>
+            <span className="text-2xl drop-shadow-md">👤</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-center">Profile</span>
+          </button>
+        </nav>
+      )}
+
+        </>
+      )}
 
       {/* Auth Modal */}
       {showAuthModal && (
@@ -1705,6 +1839,30 @@ export default function App() {
               <Input label={authMode === 'moderator' ? "Username" : "Email"} name="email" type={authMode === 'moderator' ? "text" : "email"} required />
               <Input label="Password" name="password" type="password" required />
               <Button type="submit" loading={isProcessing} className="w-full py-4 mt-2 rounded-2xl">Continue</Button>
+              
+              {authMode !== 'moderator' && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-4">
+                    <div className="h-[1px] flex-1 bg-slate-100"></div>
+                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Or</span>
+                    <div className="h-[1px] flex-1 bg-slate-100"></div>
+                  </div>
+                  <Button 
+                    onClick={handleGoogleLogin} 
+                    variant="secondary" 
+                    type="button"
+                    className="w-full py-4 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                  </Button>
+                </div>
+              )}
             </form>
             <div className="flex flex-col gap-4 pt-4 border-t border-slate-100 text-center">
               <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{authMode === 'login' ? 'Create New Account' : 'Back to Login'}</button>
