@@ -1,0 +1,23 @@
+{
+  "name": "JB Healthcare - আপনার ডিজিটাল স্বাস্থ্য সঙ্গী",
+  "short_name": "JB Health",
+  "description": "বাংলাদেশের সেরা ডিজিটাল স্বাস্থ্য সেবা অ্যাপ্লিকেশন।",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1505751172107-5739a007721e?auto=format&fit=crop&q=80&w=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1505751172107-5739a007721e?auto=format&fit=crop&q=80&w=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
