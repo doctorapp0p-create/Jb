@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jb-healthcare.vercel.app/sitemap.xml

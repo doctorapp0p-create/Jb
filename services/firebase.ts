@@ -13,7 +13,8 @@ async function testConnection() {
     await getDocFromServer(doc(db, '_connection_test_', 'check'));
     console.log("Firebase Connected Successfully");
   } catch (error) {
-    if (error instanceof Error && error.message.includes('permission-denied')) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg.includes('permission-denied') || errorMsg.includes('insufficient permissions')) {
         // This is actually a good sign - it means we reached the server
         console.log("Firebase reachable (Permissions active)");
         return;
