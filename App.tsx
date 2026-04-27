@@ -133,7 +133,11 @@ const DownloadFAB: React.FC = () => {
     if (promptSeen) return;
 
     // Show tooltip after 3 seconds of page load for the first time
-    const timer = setTimeout(() => setShowTooltip(true), 3000);
+    const timer = setTimeout(() => {
+      setShowTooltip(true);
+      // Persist seen state so it doesn't auto-prompt again even if they don't click anything
+      localStorage.setItem('jb_healthcare_apk_prompt_seen', 'true');
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -227,7 +231,7 @@ const AdminDashboard: React.FC<{
   setTicker: (val: string) => void, 
   onUpdateTicker: () => void,
   doctors: Doctor[],
-  hospitals: Hospital[],
+  hospitals: Clinic[],
   labTests: LabTest[],
   onAdd: (type: 'doctor' | 'hospital' | 'lab_test') => void,
   onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
@@ -1276,7 +1280,7 @@ export default function App() {
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">JB Healthcare...</div>;
 
   return (
-    <div className={profile?.role === UserRole.ADMIN ? "min-h-screen bg-slate-50 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto relative overflow-hidden shadow-2xl"}>
+    <div className={profile?.role === UserRole.ADMIN ? "min-h-screen bg-slate-50 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col relative overflow-hidden"}>
       
       {profile?.role === UserRole.ADMIN ? (
         <AdminDashboard 
