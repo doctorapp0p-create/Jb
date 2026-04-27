@@ -69,6 +69,7 @@ export interface Order {
   payment_type?: 'online' | 'offline';
   sender_name: string;
   sender_contact: string;
+  patient_name?: string;
   trx_id: string;
   hospital_name?: string;
   status: 'pending' | 'verified' | 'processing' | 'completed' | 'cancelled';

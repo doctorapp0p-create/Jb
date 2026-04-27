@@ -417,6 +417,9 @@ const AdminDashboard: React.FC<{
                           <Badge status={order.status} />
                         </div>
                         <p className="text-[10px] text-blue-600 font-bold uppercase">{order.sender_contact}</p>
+                        {order.patient_name && (
+                           <p className="text-[9px] font-black text-rose-500 uppercase mt-1">Patient: {order.patient_name}</p>
+                        )}
                       </div>
                       <p className="text-[12px] font-black text-slate-800">৳{order.amount + (order.shipping || 0)}</p>
                     </div>
@@ -700,6 +703,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [contactPhone, setContactPhone] = useState('');
+  const [patientName, setPatientName] = useState('');
   const [tickerMessage, setTickerMessage] = useState('জেবি হেলথকেয়ারে আপনাকে স্বাগত! যেকোনো প্রয়োজনে কল করুন: ০১৫১৮৩৯৫৭৭২');
 
   // Specialty Scroll Ref
@@ -1086,6 +1090,10 @@ export default function App() {
       setShowAuthModal(true);
       return;
     }
+    if (!patientName || patientName.length < 3) {
+      alert('অনুগ্রহ করে রোগীর নাম লিখুন।');
+      return;
+    }
     if (!contactPhone || contactPhone.length < 11) {
       alert('অনুগ্রহ করে সঠিক ১১-ডিজিটের ফোন নম্বর দিন।');
       return;
@@ -1105,6 +1113,7 @@ export default function App() {
       payment_type: paymentType,
       sender_name: profile?.full_name || 'Guest',
       sender_contact: contactPhone,
+      patient_name: patientName,
       trx_id: paymentType === 'offline' ? `OFFLINE-${Math.random().toString(36).substr(2, 6).toUpperCase()}` : trxId,
       hospital_name: showPayment.hospitalName || '',
       status: 'pending'
@@ -1112,28 +1121,32 @@ export default function App() {
 
     try {
       const ordersRef = collection(db, 'orders');
-      await addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() });
-      
-      alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে যোগাযোগ করবেন।');
-      setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
-      setCart([]);
-      setTrxId('');
-      setContactPhone('');
-      setPaymentType('online');
-      fetchUserData();
-      
-      // Async notify PHP API without blocking
+      // Fire and forget PHP notification to reduce wait time
       fetch('./api.php?path=orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newOrder)
-      }).catch(e => console.log("PHP API silent fail:", e));
+      }).catch(e => console.log("PHP notify fail:", e));
 
+      // Main operation: Firestore
+      await addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() });
+      
+      // Immediate success feedback to improve perceived performance
+      setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
+      setCart([]);
+      setTrxId('');
+      setContactPhone('');
+      setPatientName('');
+      setPaymentType('online');
+      
+      alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে আপনার সাথে যোগাযোগ করবেন।');
+      fetchUserData();
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'orders');
-      alert('অর্ডার সম্পন্ন করা যায়নি। আপনার ইন্টারনেট সংযোগ চেক করুন।');
+      alert('অর্ডার সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।');
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
   const filteredDoctors = useMemo(() => {
@@ -2035,8 +2048,16 @@ export default function App() {
                     )}
                  </div>
                   <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 mb-4">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">আপনার ফোন নম্বর দিন (বাধ্যতামূলক)</p>
-                     <Input label="আপনার সচল ফোন নম্বরটি" placeholder="01XXXXXXXXX" type="tel" required value={contactPhone} onChange={setContactPhone} />
+                     <div className="space-y-4">
+                        <div>
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">রোগীর নাম (বাধ্যতামূলক)</p>
+                           <Input label="সম্পূর্ণ নাম" placeholder="রোগীর নাম লিখুন" required value={patientName} onChange={setPatientName} />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">আপনার ফোন নম্বর দিন (বাধ্যতামূলক)</p>
+                           <Input label="আপনার সচল ফোন নম্বরটি" placeholder="01XXXXXXXXX" type="tel" required value={contactPhone} onChange={setContactPhone} />
+                        </div>
+                     </div>
                   </div>
                  <div className="bg-blue-600 p-8 rounded-[40px] text-white text-center shadow-2xl shadow-blue-500/30">
                     <p className="text-4xl font-black">৳{showPayment.amount + showPayment.shipping}</p>
