@@ -233,10 +233,11 @@ const AdminDashboard: React.FC<{
   doctors: Doctor[],
   hospitals: Clinic[],
   labTests: LabTest[],
+  orders: Order[],
   onAdd: (type: 'doctor' | 'hospital' | 'lab_test') => void,
   onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
   onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void
-}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, onAdd, onEdit, onDelete }) => {
+}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, onAdd, onEdit, onDelete }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -395,12 +396,45 @@ const AdminDashboard: React.FC<{
         )}
 
         {activeSubTab === 'orders' && (
-          <div className="text-center py-20 space-y-4">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-              <MessageSquare size={32} />
-            </div>
-            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No Active Bookings</p>
-            <p className="text-[10px] text-slate-400 font-medium max-w-xs mx-auto">সবগুলো বুকিং এবং ল্যাব টেস্টের অর্ডার এখানে দেখা যাবে।</p>
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+            <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Booking Orders ({orders.length})</h2>
+            {orders.length === 0 ? (
+              <div className="text-center py-20 space-y-4">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                  <MessageSquare size={32} />
+                </div>
+                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No Active Bookings</p>
+                <p className="text-[10px] text-slate-400 font-medium max-w-xs mx-auto">সবগুলো বুকিং এবং ল্যাব টেস্টের অর্ডার এখানে দেখা যাবে।</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map(order => (
+                  <div key={order.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-black text-slate-800">{order.sender_name}</p>
+                          <Badge status={order.status} />
+                        </div>
+                        <p className="text-[10px] text-blue-600 font-bold uppercase">{order.sender_contact}</p>
+                      </div>
+                      <p className="text-[12px] font-black text-slate-800">৳{order.amount + (order.shipping || 0)}</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Service:</p>
+                      <p className="text-[11px] font-bold text-slate-700">{order.item_name}</p>
+                      {order.hospital_name && (
+                        <p className="text-[9px] font-black text-blue-600 uppercase mt-1">📍 {order.hospital_name}</p>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center text-[9px] font-black uppercase text-slate-400">
+                       <span>{order.payment_method}</span>
+                       <span className="text-slate-300">TRX: {order.trx_id}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -665,6 +699,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [contactPhone, setContactPhone] = useState('');
   const [tickerMessage, setTickerMessage] = useState('জেবি হেলথকেয়ারে আপনাকে স্বাগত! যেকোনো প্রয়োজনে কল করুন: ০১৫১৮৩৯৫৭৭২');
 
   // Specialty Scroll Ref
@@ -1045,6 +1080,62 @@ export default function App() {
     setShowPayment({ show: true, amount: totalAmount, item: itemNames, shipping });
   };
 
+  const submitOrder = async () => {
+    if (!user) {
+      alert('অর্ডার করতে দয়া করে লগইন করুন।');
+      setShowAuthModal(true);
+      return;
+    }
+    if (!contactPhone || contactPhone.length < 11) {
+      alert('অনুগ্রহ করে সঠিক ১১-ডিজিটের ফোন নম্বর দিন।');
+      return;
+    }
+    if (paymentType === 'online' && !trxId) {
+      alert('অনুগ্রহ করে TrxID দিন');
+      return;
+    }
+    setIsProcessing(true);
+    const newOrder: Order = {
+      user_id: user.id,
+      user_email: user.email || 'guest@jb.com',
+      item_name: showPayment.item,
+      amount: showPayment.amount,
+      shipping: showPayment.shipping,
+      payment_method: paymentType === 'offline' ? 'Cash at Clinic' : (paymentMethod || 'bkash'),
+      payment_type: paymentType,
+      sender_name: profile?.full_name || 'Guest',
+      sender_contact: contactPhone,
+      trx_id: paymentType === 'offline' ? `OFFLINE-${Math.random().toString(36).substr(2, 6).toUpperCase()}` : trxId,
+      hospital_name: showPayment.hospitalName || '',
+      status: 'pending'
+    };
+
+    try {
+      const ordersRef = collection(db, 'orders');
+      await addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() });
+      
+      alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে যোগাযোগ করবেন।');
+      setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
+      setCart([]);
+      setTrxId('');
+      setContactPhone('');
+      setPaymentType('online');
+      fetchUserData();
+      
+      // Async notify PHP API without blocking
+      fetch('./api.php?path=orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      }).catch(e => console.log("PHP API silent fail:", e));
+
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'orders');
+      alert('অর্ডার সম্পন্ন করা যায়নি। আপনার ইন্টারনেট সংযোগ চেক করুন।');
+    }
+    setIsProcessing(false);
+  };
+
   const filteredDoctors = useMemo(() => {
     let list = doctors;
     if (selectedHospitalId) list = list.filter(d => d.clinics.includes(selectedHospitalId));
@@ -1109,81 +1200,6 @@ export default function App() {
       p.doctor_name.toLowerCase().includes(adminSearchTerm.toLowerCase())
     );
   }, [allPrescriptions, adminSearchTerm]);
-
-  const submitOrder = async () => {
-    if (!user) {
-      alert('অর্ডার করতে দয়া করে লগইন করুন।');
-      setShowAuthModal(true);
-      return;
-    }
-    if (paymentType === 'online' && !trxId) {
-      alert('অনুগ্রহ করে TrxID দিন');
-      return;
-    }
-    setIsProcessing(true);
-    const newOrder: Order = {
-      user_id: user.id,
-      user_email: user.email || 'guest@jb.com',
-      item_name: showPayment.item,
-      amount: showPayment.amount,
-      shipping: showPayment.shipping,
-      payment_method: paymentType === 'offline' ? 'Cash at Clinic' : (paymentMethod || 'bkash'),
-      payment_type: paymentType,
-      sender_name: profile?.full_name || 'Guest',
-      sender_contact: profile?.phone || '',
-      trx_id: paymentType === 'offline' ? `OFFLINE-${Math.random().toString(36).substr(2, 6).toUpperCase()}` : trxId,
-      hospital_name: showPayment.hospitalName || '',
-      status: 'pending'
-    };
-
-    try {
-      // 1. Try to send to PHP API (Hostinger)
-      const phpResponse = await fetch('./api.php?path=orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      });
-      
-      const resText = await phpResponse.text();
-      let resData;
-      try {
-        resData = JSON.parse(resText);
-      } catch (e) {
-        throw new Error("Invalid server response (PHP API)");
-      }
-      
-      if (resData.status === 'success') {
-        alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে যোগাযোগ করবেন।');
-        setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
-        setCart([]);
-        setTrxId('');
-        setPaymentType('online');
-        fetchUserData();
-        setIsProcessing(false);
-        return;
-      } else if (resData.error) {
-         throw new Error(resData.error);
-      }
-    } catch (e: any) {
-      console.log("PHP API failed:", e.message);
-    }
-
-    // 2. Fallback to Firebase if PHP API fails/missing
-    try {
-      const ordersRef = collection(db, 'orders');
-      await addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() });
-      alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে যোগাযোগ করবেন।');
-      setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
-      setCart([]);
-      setTrxId('');
-      setPaymentType('online');
-      fetchUserData();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'orders');
-      alert('অর্ডার সম্পন্ন করা যায়নি। আপনার ইন্টারনেট সংযোগ চেক করুন।');
-    }
-    setIsProcessing(false);
-  };
 
   // --- Data Management Functions ---
   const handleSaveData = async (type: 'doctor' | 'hospital' | 'lab_test', item: any) => {
@@ -1292,6 +1308,7 @@ export default function App() {
           doctors={doctors}
           hospitals={hospitals}
           labTests={labTests}
+          orders={allOrders}
           onAdd={(type) => {
             setAdminDataTab(type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'tests');
             setEditingItem({});
@@ -2017,6 +2034,10 @@ export default function App() {
                       </p>
                     )}
                  </div>
+                  <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 mb-4">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">আপনার ফোন নম্বর দিন (বাধ্যতামূলক)</p>
+                     <Input label="আপনার সচল ফোন নম্বরটি" placeholder="01XXXXXXXXX" type="tel" required value={contactPhone} onChange={setContactPhone} />
+                  </div>
                  <div className="bg-blue-600 p-8 rounded-[40px] text-white text-center shadow-2xl shadow-blue-500/30">
                     <p className="text-4xl font-black">৳{showPayment.amount + showPayment.shipping}</p>
                     <p className="text-[10px] font-black opacity-70 uppercase mt-2 tracking-[0.2em]">Total Bill Payable {showPayment.shipping > 0 ? '(+৳১০০ Home Visit)' : ''}</p>
