@@ -74,6 +74,7 @@
         "payment_type": { "type": "string", "enum": ["online", "offline"] },
         "sender_name": { "type": "string" },
         "sender_contact": { "type": "string" },
+        "patient_name": { "type": "string" },
         "trx_id": { "type": "string" },
         "hospital_name": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "verified", "processing", "completed", "cancelled"] }

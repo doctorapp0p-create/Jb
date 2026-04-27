@@ -24,6 +24,18 @@ service cloud.firestore {
     }
     function isDoctor() { return isSignedIn() && getUserData().role == 'DOCTOR'; }
     
+    function isValidId(id) { return id is string && id.size() <= 128; }
+    
+    function isValidOrder(data) {
+      return data.user_id == request.auth.uid &&
+             data.item_name is string && data.item_name.size() <= 1000 &&
+             data.amount is number &&
+             data.sender_name is string && data.sender_name.size() <= 200 &&
+             data.sender_contact is string && data.sender_contact.size() <= 20 &&
+             (!('patient_name' in data) || (data.patient_name is string && data.patient_name.size() <= 200)) &&
+             data.status == 'pending';
+    }
+    
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
@@ -78,10 +90,10 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow get: if isSignedIn() && (existing().user_id == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow create: if isEmailVerified() && incoming().user_id == request.auth.uid;
+      allow create: if isSignedIn() && isValidOrder(incoming());
       allow update: if isAdmin() || (
         isSignedIn() && existing().user_id == request.auth.uid &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['sender_name', 'sender_contact', 'trx_id', 'payment_method'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['sender_name', 'sender_contact', 'patient_name', 'trx_id', 'payment_method'])
       );
       allow delete: if isAdmin();
     }

@@ -1081,10 +1081,15 @@ export default function App() {
     const itemNames = cart.map(i => i.name).join(', ');
     const hasEmergency = cart.some(i => i.type === 'emergency');
     const shipping = hasEmergency ? 100 : 0;
+    
+    if (!patientName && profile?.full_name) setPatientName(profile.full_name);
+    if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
+    
     setShowPayment({ show: true, amount: totalAmount, item: itemNames, shipping });
   };
 
   const submitOrder = async () => {
+    if (isProcessing) return;
     if (!user) {
       alert('অর্ডার করতে দয়া করে লগইন করুন।');
       setShowAuthModal(true);
@@ -1142,8 +1147,14 @@ export default function App() {
       alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে আপনার সাথে যোগাযোগ করবেন।');
       fetchUserData();
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'orders');
-      alert('অর্ডার সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।');
+      console.error("Order submission failed:", error);
+      alert('অর্ডার সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন বা ইন্টারনেট সংযোগ চেক করুন।');
+      // Still log to console for debugging but don't re-throw to avoid breaking the UI flow
+      try {
+        handleFirestoreError(error, OperationType.WRITE, 'orders');
+      } catch (e) {
+        // Silently catch the re-throw from helper if we just want to log
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -1525,6 +1536,10 @@ export default function App() {
                                     <button 
                                       onClick={() => {
                                         const h = hospitals.find(h => h.id === selectedHospitalId) || hospitals.find(h => h.id === d.clinics[0]);
+                                        
+                                        if (!patientName && profile?.full_name) setPatientName(profile.full_name);
+                                        if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
+                                        
                                         setShowPayment({
                                           show: true, 
                                           amount: d.consultationFee || 500, 
