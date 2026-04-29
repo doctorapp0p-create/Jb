@@ -782,19 +782,39 @@ export default function App() {
   const [tempImage, setTempImage] = useState<string | null>(null);
 
   const handleShare = async () => {
+    const shareUrl = 'https://www.nilpha.com/';
     try {
       if (navigator.share) {
         await navigator.share({
           title: 'JB Healthcare',
           text: 'জেবি হেলথকেয়ার - আপনার ডিজিটাল ডাক্তার। স্বাস্থ্যসেবা এখন আপনার হাতের মুঠোয়।',
-          url: window.location.origin,
+          url: shareUrl,
         });
       } else {
-        await navigator.clipboard.writeText(window.location.origin);
+        await navigator.clipboard.writeText(shareUrl);
         alert('অ্যাপ লিঙ্ক কপি করা হয়েছে!');
       }
-    } catch (err) {
-      console.error('Sharing failed', err);
+    } catch (err: any) {
+      // Don't log canceled or abort errors as they are not "bugs"
+      if (err.name === 'AbortError') {
+        console.log('Share was canceled by user');
+        return;
+      }
+      
+      console.warn('Sharing failed, attempting clipboard fallback', err.message);
+      
+      // Fallback to clipboard if share fails or is cancelled
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('অ্যাপ লিঙ্ক কপি করা হয়েছে!');
+      } catch (clipboardErr: any) {
+        // If document isn't focused, we can't do much, just log it silenty for devs
+        if (clipboardErr.name === 'NotAllowedError' || clipboardErr.message.includes('focused')) {
+          console.warn('Clipboard failed due to focus loss, link was not copied.');
+        } else {
+          console.error('Final clipboard fallback failed', clipboardErr);
+        }
+      }
     }
   };
 
@@ -1007,7 +1027,7 @@ export default function App() {
     } catch (err: any) { 
       console.error("Auth Error Detail:", err);
       let msg = 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         msg = 'ভুল ইমেইল বা পাসওয়ার্ড!';
       } else if (err.message) {
         msg = `এরর: ${err.message}`;
@@ -1109,7 +1129,7 @@ export default function App() {
     }
     setIsProcessing(true);
     const newOrder: Order = {
-      user_id: user.id,
+      user_id: user.uid || user.id,
       user_email: user.email || 'guest@jb.com',
       item_name: showPayment.item,
       amount: showPayment.amount,
@@ -1124,37 +1144,38 @@ export default function App() {
       status: 'pending'
     };
 
-    try {
-      const ordersRef = collection(db, 'orders');
-      // Fire and forget PHP notification to reduce wait time
-      fetch('./api.php?path=orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      }).catch(e => console.log("PHP notify fail:", e));
-
-      // Main operation: Firestore
-      await addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() });
-      
-      // Immediate success feedback to improve perceived performance
+    const finalizeSuccess = () => {
       setShowPayment({ show: false, amount: 0, item: '', shipping: 0 });
       setCart([]);
       setTrxId('');
       setContactPhone('');
       setPatientName('');
       setPaymentType('online');
-      
-      alert('অর্ডারটি সফল হয়েছে! মডারেটর কিছুক্ষণের মধ্যে আপনার সাথে যোগাযোগ করবেন।');
+      alert('আপনার সিরিয়াল বুকিং রিকুয়েস্ট দেওয়া হয়েছে দয়া করে একটু অপেক্ষা করুন ।');
       fetchUserData();
+    };
+
+    // --- INSTANT FEEDBACK ---
+    finalizeSuccess();
+
+    try {
+      const ordersRef = collection(db, 'orders');
+      
+      // Fire and forget PHP notification
+      fetch('./api.php?path=orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      }).catch(e => console.log("PHP notify fail:", e));
+
+      // Background Firestore operation
+      addDoc(ordersRef, { ...newOrder, created_at: serverTimestamp() })
+        .catch(error => {
+          console.error("Delayed Firestore error:", error);
+        });
+        
     } catch (error) {
-      console.error("Order submission failed:", error);
-      alert('অর্ডার সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন বা ইন্টারনেট সংযোগ চেক করুন।');
-      // Still log to console for debugging but don't re-throw to avoid breaking the UI flow
-      try {
-        handleFirestoreError(error, OperationType.WRITE, 'orders');
-      } catch (e) {
-        // Silently catch the re-throw from helper if we just want to log
-      }
+      console.error("Order submission background logic failure:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -2103,7 +2124,7 @@ export default function App() {
                         <button onClick={() => { navigator.clipboard.writeText(PAYMENT_NUMBERS[paymentMethod]); alert('Number Copied!'); }} className="bg-blue-600 text-white text-[10px] font-black px-6 py-3.5 rounded-2xl shadow-lg hover:bg-blue-700 transition-colors">COPY</button>
                       </div>
                       <Input label="Transaction ID (TrxID)" placeholder="Enter 10-digit ID" required value={trxId} onChange={setTrxId} />
-                      <Button variant="success" className="w-full py-5 mt-4 rounded-3xl" onClick={submitOrder} loading={isProcessing}>VERIFY & CONFIRM</Button>
+                      <Button variant="success" className="w-full py-5 mt-4 rounded-3xl uppercase font-black" onClick={submitOrder} loading={isProcessing}>ভেরিফাই নিশ্চিত করুন</Button>
                     </div>
                   )}
                 </>
@@ -2113,7 +2134,7 @@ export default function App() {
                      <p className="text-[11px] font-black text-amber-700 uppercase mb-2">Cash on Visit</p>
                      <p className="text-[10px] text-amber-600 leading-relaxed">আপনি সরাসরি ক্লিনিকে গিয়ে ফি পরিশোধ করতে পারবেন। আপনার সিরিয়ালটি কনফার্ম করার জন্য নিচের বাটনে ক্লিক করুন।</p>
                    </div>
-                   <Button variant="success" className="w-full py-5 rounded-3xl" onClick={submitOrder} loading={isProcessing}>CONFIRM APPOINTMENT</Button>
+                   <Button variant="success" className="w-full py-5 rounded-3xl uppercase font-black" onClick={submitOrder} loading={isProcessing}>অ্যাপয়েন্টমেন্ট নিশ্চিত করুন</Button>
                 </div>
               )}
            </div>
