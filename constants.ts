@@ -1,5 +1,5 @@
 
-import { Doctor, Clinic, Medicine } from './types';
+import { Doctor, Clinic, Medicine, LabTest } from './types';
 
 export const DISTRICTS = ['Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi', 'Khulna', 'Barishal', 'Rangpur', 'Mymensingh', 'Nilphamari'];
 
@@ -23,60 +23,69 @@ export const SPECIALTIES = [
 
 export const DOCTORS: Doctor[] = [
   // --- Medicine ---
-  { id: 'med1', name: 'Dr. Md. Shariful Islam', degree: 'MBBS, BCS (Health), FCPS (Medicine)', specialty: 'Medicine', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
+  { id: 'med1', name: 'Dr. Md. Shariful Islam', degree: 'MBBS, BCS (Health), FCPS (Medicine)', specialty: 'Medicine', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-madina'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
+  { id: 'med2', name: 'Dr. Md. Sazzad Hossain', degree: 'MBBS, BCS (Health), MD (Internal Medicine)', specialty: 'Medicine', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'শনি-বৃহস্পতি: বিকাল ৪:০০ - রাত ৮:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'med3', name: 'Dr. Amitabha Roy', degree: 'MBBS, FCPS (Medicine)', specialty: 'Medicine', districts: ['Nilphamari'], clinics: ['c-ar'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৮:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'med-ibadat', name: 'Dr. Md. Aminur Rahman', degree: 'MBBS, BCS (Health), FCPS (Medicine)', specialty: 'Medicine', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
 
   // --- Cardiology ---
-  { id: 'card1', name: 'Dr. Md. Asad Alam', degree: 'MBBS, BCS (Health), CCD (BIRDEM), D-Card (BSMMU)', specialty: 'Cardiology', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৯:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
+  { id: 'card1', name: 'Dr. Md. Asad Alam', degree: 'MBBS, BCS (Health), CCD (BIRDEM), D-Card (BSMMU)', specialty: 'Cardiology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৯:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'card2', name: 'Dr. Md. Mahfuz Ali', degree: 'MBBS, BCS (Health), FCPS (Medicine), D-Card', specialty: 'Cardiology', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'শনি-বৃহস্পতি: বিকাল ৩:০০ - রাত ১০:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'card-ibadat', name: 'Dr. Md. Rezwanul Haque', degree: 'MBBS, BCS (Health), D-Card', specialty: 'Cardiology', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
 
   // --- Neuromedicine ---
-  { id: 'neuro1', name: 'Dr. Md. Asaduzzaman (Asad)', degree: 'MBBS, BCS (Health), FCPS (Medicine), MD (Neurology)', specialty: 'Neuromedicine', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'শুক্রবার: সকাল ১০:০০ - রাত ৮:০০', availableToday: false, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
+  { id: 'neuro1', name: 'Dr. Md. Asaduzzaman (Asad)', degree: 'MBBS, BCS (Health), FCPS (Medicine), MD (Neurology)', specialty: 'Neuromedicine', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'শুক্রবার: সকাল ১০:০০ - রাত ৮:০০', availableToday: false, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
   { id: 'neuro2', name: 'Dr. Md. Kaykobad Hossain', degree: 'MBBS, BCS, FCPS, MD (Neurology)', specialty: 'Neuromedicine', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'সোম-বুধ: বিকাল ৩:০০ - রাত ৮:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
 
   // --- Gynecology ---
-  { id: 'gyn1', name: 'Dr. Wabaida Najmin (Mukta)', degree: 'MBBS, BCS (Health), DGO (DMC)', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
+  { id: 'gyn1', name: 'Dr. Wabaida Najmin (Mukta)', degree: 'MBBS, BCS (Health), DGO (DMC)', specialty: 'Gynecology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'gyn2', name: 'Dr. Rumana Afroz', degree: 'MBBS, PGT, EOCT, DMU, CCD, MPH', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'শনি-বৃহস্পতি: বিকাল ৪:০০ - রাত ১০:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'gyn3', name: 'Dr. Shahnaz Begum', degree: 'MBBS, FCPS, MS (Gynae)', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-ar'], schedule: 'প্রতিদিন: সকাল ১০:০০ - দুপুর ২:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'gyn-ibadat', name: 'Dr. Mosammat Sharmin Akter', degree: 'MBBS, BCS (Health), MS (Gynae)', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ২:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
 
   // --- Orthopedics ---
+  { id: 'orth1', name: 'Dr. Md. Rezaul Karim', degree: 'MBBS, MS (Orthopedics), D-Ortho', specialty: 'Orthopedics', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 700 },
   { id: 'orth2', name: 'Dr. Md. Golam Sarwar', degree: 'MBBS, BCS (Health), FCPS (Ortho)', specialty: 'Orthopedics', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'রবি, মঙ্গল, বৃহস্পতি: বিকাল ৪:০০ - রাত ৮:০০', availableToday: false, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'orth3', name: 'Dr. Md. Jakir Hossain', degree: 'MBBS, MS (Orthopedics)', specialty: 'Orthopedics', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
 
   // --- Pediatrics ---
-  { id: 'ped1', name: 'Dr. Shah Md. Moazzem', degree: 'MBBS, DCH (Child), BCS', specialty: 'Pediatrics', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ১০:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
+  { id: 'ped1', name: 'Dr. Shah Md. Moazzem', degree: 'MBBS, DCH (Child), BCS', specialty: 'Pediatrics', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ১০:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'ped-ibadat', name: 'Dr. Md. Rafiqul Islam', degree: 'MBBS, BCS (Health), DCH (Child)', specialty: 'Pediatrics', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
 
   // --- Surgery ---
-  { id: 'sur1', name: 'Dr. Md. Emdadul Haque', degree: 'MBBS, FCPS (Surgery)', specialty: 'Surgery', districts: ['Nilphamari'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 700 },
+  { id: 'sur1', name: 'Dr. Md. Emdadul Haque', degree: 'MBBS, FCPS (Surgery)', specialty: 'Surgery', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 700 },
   { id: 'sur2', name: 'Dr. Md. Zahidul Islam', degree: 'MBBS, MS (Surgery)', specialty: 'Surgery', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 700 },
 
   // --- Urology ---
+  { id: 'uro1', name: 'Dr. Md. Shafiqul Alam', degree: 'MBBS, MS (Urology)', specialty: 'Urology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
   { id: 'uro2', name: 'Dr. Md. Nuruzzaman Mia', degree: 'MBBS, BCS (Health), MS (Urology)', specialty: 'Urology', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
 
   // --- Endocrinology ---
+  { id: 'end1', name: 'Dr. Md. Masum Billah', degree: 'MBBS, DEM (BIRDEM), FCPS (Endo)', specialty: 'Endocrinology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
   { id: 'end2', name: 'Dr. Ahmed Tanveer', degree: 'MBBS, MD (Endocrinology)', specialty: 'Endocrinology', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'শুক্রবার: বিকাল ৩:০০ - রাত ৯:০০', availableToday: false, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
 
   // --- ENT ---
+  { id: 'ent1', name: 'Dr. Md. Mahbubur Rahman', degree: 'MBBS, DLO (ENT)', specialty: 'ENT', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'ent2', name: 'Dr. Md. Rashidul Islam', degree: 'MBBS, DLO (ENT)', specialty: 'ENT', districts: ['Nilphamari'], clinics: ['c-ar'], schedule: 'শনি-বৃহস্পতি: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
 
   // --- Dermatology ---
-  { id: 'derm1', name: 'Dr. Fahim Kishwar', degree: 'MBBS, DDV, CCD, FCPS', specialty: 'Dermatology', districts: ['Nilphamari'], clinics: ['c-ar'], schedule: 'শুক্রবার: বিকাল ৩:০০ - রাত ৯:০০', availableToday: false, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
+  { id: 'derm1', name: 'Dr. Fahim Kishwar', degree: 'MBBS, DDV, CCD, FCPS', specialty: 'Dermatology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-ar'], schedule: 'শুক্রবার: বিকাল ৩:০০ - রাত ৯:০০', availableToday: false, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
   { id: 'derm2', name: 'Dr. Md. Nurul Islam', degree: 'MBBS, DDV (Skin)', specialty: 'Dermatology', districts: ['Nilphamari'], clinics: ['c-ibadat'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
 
   // --- Ophthalmology ---
+  { id: 'eye1', name: 'Dr. Md. Mostofa Kamal', degree: 'MBBS, DO (Eye)', specialty: 'Ophthalmology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'শনি-বৃহস্পতি: বিকাল ৪:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
   { id: 'eye2', name: 'Dr. S. M. Nazmul Haque', degree: 'MBBS, DO (Eye)', specialty: 'Ophthalmology', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'রবি-বৃহস্পতি: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.7, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
 
   // --- Psychiatry ---
+  { id: 'psy1', name: 'Dr. Md. Mahbubur Rahman', degree: 'MBBS, MD (Psychiatry)', specialty: 'Psychiatry', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 1000 },
   { id: 'psy2', name: 'Dr. Md. Enamul Haque', degree: 'MBBS, MD (Psychiatry)', specialty: 'Psychiatry', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'প্রতিদিন: সন্ধ্যা ৬:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 1000 },
 
   // --- Dentistry ---
+  { id: 'dent1', name: 'Dr. Md. Arifur Rahman', degree: 'BDS, PGT (Dental)', specialty: 'Dentistry', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৯:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 400 },
   { id: 'dent2', name: 'Dr. Md. Al-Amin', degree: 'BDS (Dental)', specialty: 'Dentistry', districts: ['Nilphamari'], clinics: ['c-ar'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ১০:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 400 },
 
   // --- Gastroenterology ---
+  { id: 'gas1', name: 'Dr. Md. Sayedur Rahman', degree: 'MBBS, MD (Gastroenterology)', specialty: 'Gastroenterology', districts: ['Nilphamari', 'Dhaka'], clinics: ['c-greensign'], schedule: 'প্রতিদিন: বিকাল ৩:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
   { id: 'gas2', name: 'Dr. Md. Mizanur Rahman', degree: 'MBBS, MD (Hepatology)', specialty: 'Gastroenterology', districts: ['Nilphamari'], clinics: ['c-madina'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৮:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 800 },
 
   // --- Janata Clinic Doctors ---
@@ -102,7 +111,7 @@ export const EMERGENCY_SERVICES = [
   { id: 'e4', name: 'BP Check', price: 100, icon: '🩺', description: 'ব্লাড প্রেসার ও সুগার চেক' },
 ];
 
-export const LAB_TESTS = [
+export const LAB_TESTS: LabTest[] = [
   { id: 'lt1', name: 'RBS (রক্তের সুগার)', price: 200 },
   { id: 'lt2', name: 'FBS & 2HRS', price: 400 },
   { id: 'lt3', name: 'S.Creatinine (কিডনি)', price: 500 },
@@ -125,7 +134,7 @@ export const MEDICINES: Medicine[] = [
 
 export const CLINICS: Clinic[] = [
   { id: 'c-madina', name: 'মদিনা ডায়াগনস্টিক ক্লিনিক এন্ড কনসালটেশন', district: 'Nilphamari', address: 'জেনারেল হাসপাতাল রোড, হাসপাতাল মোড়, নীলফামারী', doctors: ['med1','neuro2','orth2','uro2','end2','eye2','psy2','gas2'], image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800' },
-  { id: 'c-greensign', name: 'গ্রিন সাইন ডিজিটাল ডায়াগনস্টিক অ্যান্ড হাসপাতাল', district: 'Nilphamari', address: 'নীলফামারী সদর', doctors: ['card1', 'card2', 'neuro1', 'gyn1', 'gyn2', 'ped1', 'sur1'], image: 'https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&q=80&w=800' },
+  { id: 'c-greensign', name: 'গ্রিন সাইন ডিজিটাল ডায়াগনস্টিক অ্যান্ড হাসপাতাল', district: 'Nilphamari', address: 'নীলফামারী সদর', doctors: ['med2', 'card1', 'card2', 'neuro1', 'gyn1', 'gyn2', 'orth1', 'ped1', 'sur1', 'uro1', 'end1', 'ent1', 'eye1', 'psy1', 'dent1', 'gas1'], image: 'https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&q=80&w=800' },
   { id: 'c-ar', name: 'এ.আর. জেনারেল হাসপাতাল', district: 'Nilphamari', address: 'সদর হাসপাতাল রোড, নীলফামারী', doctors: ['med3','gyn3','ent2','derm1','dent2'], image: 'https://images.unsplash.com/photo-1587350859728-117699f8aee1?auto=format&fit=crop&q=80&w=800' },
   { id: 'c-ibadat', name: 'ইবাদত হাসপাতাল', district: 'Nilphamari', address: 'পুরাতন স্টেশন রোড, নীলফামারী', doctors: ['sur2','derm2','orth3', 'med-ibadat', 'card-ibadat', 'gyn-ibadat', 'ped-ibadat'], image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800' },
   { id: 'c-janata', name: 'জনতা ক্লিনিক এন্ড ডায়াগনস্টিক সেন্টার', district: 'Nilphamari', address: 'হাসপাতাল রোড, শান্তিনগর মোড় (ব্রিজ সংলগ্ন), নীলফামারী সদর, নীলফামারী।', doctors: ['j-gyn1', 'j-gyn2', 'j-gyn3', 'j-sur1', 'j-sur2', 'j-med1', 'j-med2', 'j-med3', 'j-med4', 'j-ped1', 'j-pain1', 'j-orth1', 'j-med5'], image: 'https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&q=80&w=800' },

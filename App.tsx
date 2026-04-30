@@ -887,16 +887,30 @@ export default function App() {
       const hospRes = await getDocs(collection(db, 'hospitals'));
       const testRes = await getDocs(collection(db, 'lab_tests'));
       
-      const doctorsData = docRes.docs.map(d => ({ id: d.id, ...d.data() } as Doctor));
-      const hospitalsData = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
-      const testsData = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
+      const dbDoctors = docRes.docs.map(d => ({ id: d.id, ...d.data() } as Doctor));
+      const dbHospitals = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
+      const dbTests = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
 
-      setDoctors(doctorsData.length > 0 ? doctorsData : DOCTORS);
-      setHospitals(hospitalsData.length > 0 ? hospitalsData : CLINICS);
-      setLabTests(testsData.length > 0 ? testsData : LAB_TESTS);
+      // Merge constants with DB data to ensure no "missing" information from new updates
+      const mergedDoctors = [...DOCTORS];
+      dbDoctors.forEach(dbD => {
+        const idx = mergedDoctors.findIndex(d => d.id === dbD.id);
+        if (idx !== -1) mergedDoctors[idx] = dbD; // Prefer DB version if exists
+        else mergedDoctors.push(dbD);
+      });
+
+      const mergedHospitals = [...CLINICS];
+      dbHospitals.forEach(dbH => {
+        const idx = mergedHospitals.findIndex(h => h.id === dbH.id);
+        if (idx !== -1) mergedHospitals[idx] = dbH;
+        else mergedHospitals.push(dbH);
+      });
+
+      setDoctors(mergedDoctors);
+      setHospitals(mergedHospitals);
+      setLabTests(dbTests.length > 0 ? dbTests : LAB_TESTS);
     } catch (error) {
        console.error("Error fetching data:", error);
-       // Fallback to constants if DB fetch fails
        setDoctors(DOCTORS);
        setHospitals(CLINICS);
        setLabTests(LAB_TESTS);
@@ -932,12 +946,12 @@ export default function App() {
     try {
       const presQuery = query(
         collection(db, 'prescriptions'),
-        where(profile.role === UserRole.DOCTOR ? 'doctor_id' : 'patient_id', '==', user.id),
+        where(profile.role === UserRole.DOCTOR ? 'doctor_id' : 'patient_id', '==', user.uid || user.id),
         orderBy('created_at', 'desc')
       );
       const ordersQuery = query(
         collection(db, 'orders'),
-        where('user_id', '==', user.id),
+        where('user_id', '==', user.uid || user.id),
         orderBy('created_at', 'desc')
       );
       
@@ -1183,7 +1197,13 @@ export default function App() {
 
   const filteredDoctors = useMemo(() => {
     let list = doctors;
-    if (selectedHospitalId) list = list.filter(d => d.clinics.includes(selectedHospitalId));
+    if (selectedHospitalId) {
+      const hospital = hospitals.find(h => h.id === selectedHospitalId);
+      list = list.filter(d => 
+        (d.clinics || []).includes(selectedHospitalId) || 
+        (hospital && (hospital.doctors || []).includes(d.id))
+      );
+    }
     if (selectedSpecialty) list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
     
     // Day Filter
