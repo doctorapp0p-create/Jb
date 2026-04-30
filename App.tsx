@@ -780,6 +780,26 @@ export default function App() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [tempImage, setTempImage] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) {
+      alert('আপনার ব্রাউজার মেনু থেকে "Install App" বা "Add to Home Screen" এ ক্লিক করুন। আইফোনের ক্ষেত্রে শেয়ার বাটন থেকে "Add to Home Screen" করুন।');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleShare = async () => {
     const shareUrl = 'https://www.nilpha.com/';
@@ -1862,6 +1882,9 @@ export default function App() {
                <div className="space-y-4 pt-4">
                   <Button onClick={handleShare} variant="primary" className="w-full py-4 rounded-[28px] flex items-center justify-center gap-3">
                     <Share2 size={20} /> অ্যাপটি শেয়ার করুন (Share App)
+                  </Button>
+                  <Button onClick={handleInstallApp} variant="secondary" className="w-full py-4 rounded-[28px] flex items-center justify-center gap-3 border-2 border-blue-100 bg-white text-blue-600">
+                    <Smartphone size={20} /> অ্যাপটি ফোনে ইন্সটল করুন (Install App)
                   </Button>
                   <Button onClick={() => window.open('https://wa.me/8801518395772', '_blank')} variant="success" className="w-full py-4 rounded-[28px] flex items-center justify-center gap-3">
                     <span className="text-xl">💬</span> Contact Support (WhatsApp)
