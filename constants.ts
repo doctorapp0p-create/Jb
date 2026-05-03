@@ -39,7 +39,12 @@ export const DOCTORS: Doctor[] = [
 
   // --- Roots Eye Operation & Consultation Center ---
   { id: 'roots-eye1', name: 'ডা. মো. মিজানুর রহমান', degree: 'MBBS, MS (Ophthalmology), BCS (Health) | সহযোগী অধ্যাপক, নীলফামারী মেডিকেল কলেজ', specialty: 'Ophthalmology', districts: ['Nilphamari'], clinics: ['c-roots'], schedule: 'সময়: (যোগাযোগ করুন)', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200', consultationFee: 400 },
-  { id: 'roots-eye2', name: 'ডা. মো. কামরুল হাসান', degree: 'MBBS (Rajshahi), BCS (Health), MS (Ophthalmology) | কনসালটেন্ট, ২৫০ শয্যা হাসপাতাল', specialty: 'Ophthalmology', districts: ['Nilphamari'], clinics: ['c-roots'], schedule: 'সময়: (যোগাযোগ করুন)', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 400 },
+  { id: 'roots-eye2', name: 'ডা. মোঃ কামরুল হাসান', degree: 'MBBS (Rajshahi), BCS (Health), MS (Ophthalmology) | কনসালটেন্ট, ২৫০ শয্যা হাসপাতাল', specialty: 'Ophthalmology', districts: ['Nilphamari'], clinics: ['c-roots'], schedule: 'সময়: (যোগাযোগ করুন)', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 400 },
+
+  // --- Ebadot General Hospital ---
+  { id: 'ebadot-med1', name: 'ডা. মো. এমদাদুল হক', degree: 'MBBS, Medicine Specialist | কনসালটেন্ট মেডিসিন', specialty: 'Medicine', districts: ['Nilphamari'], clinics: ['c-ebadot'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
+  { id: 'ebadot-sur1', name: 'ডা. মো. আশরাফুল ইসলাম (আশরাফ)', degree: 'MBBS, BCS (Health), MS (Surgery) | কনসালটেন্ট সার্জারি, ২৫০ শয্যা হাসপাতাল, নীলফামারী', specialty: 'Surgery', districts: ['Nilphamari'], clinics: ['c-ebadot'], schedule: 'প্রতিদিন: বিকাল ৫:০০ - রাত ৯:০০', availableToday: true, rating: 4.9, image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200', consultationFee: 600 },
+  { id: 'ebadot-gyn1', name: 'ডা. মোছাঃ জাহানারা খাতুন', degree: 'MBBS, BCS (Health), DGO (Gynae) | কনসালটেন্ট গাইনী, ২৫০ শয্যা হাসপাতাল, নীলফামারী', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-ebadot'], schedule: 'প্রতিদিন: বিকাল ৪:০০ - রাত ৮:০০', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
 
   // --- Moun General Hospital ---
   { id: 'moun-gyn1', name: 'ডা. নিশাত তাবাসসুম', degree: 'MBBS (BUP), PGT, CMU (Ultra), EOC (Gynae) | RMO', specialty: 'Gynecology', districts: ['Nilphamari'], clinics: ['c-moun'], schedule: 'প্রতিদিন', availableToday: true, rating: 4.8, image: 'https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=200', consultationFee: 500 },
@@ -106,6 +111,7 @@ export const CLINICS: Clinic[] = [
   { id: 'c-roots', name: 'Roots Eye Operation & Consultation Center', district: 'Nilphamari', address: 'নীলফামারী সদর', doctors: ['roots-eye1', 'roots-eye2'], image: 'https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?auto=format&fit=crop&q=80&w=800' },
   { id: 'c-moun', name: 'Moun General Hospital & Diagnostic Center', district: 'Nilphamari', address: 'নীলফামারী সদর', doctors: ['moun-gyn1', 'moun-gyn2', 'moun-sur1', 'moun-card1'], image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800' },
   { id: 'c-pacific', name: 'Pacific Labzone', district: 'Nilphamari', address: 'নীলফামারী', doctors: ['pacific-gas1', 'pacific-orth1', 'pacific-med1', 'pacific-neuro1', 'pacific-med2', 'pacific-orth2', 'pacific-med3'], image: 'https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&q=80&w=800' },
+  { id: 'c-ebadot', name: 'Ebadot General Hospital & Digital Diagnostic Center', district: 'Nilphamari', address: 'কলেজ রোড, নীলফামারী সদর', doctors: ['ebadot-med1', 'ebadot-sur1', 'ebadot-gyn1'], image: 'https://images.unsplash.com/photo-1587350859728-117699f8aee1?auto=format&fit=crop&q=80&w=800' },
 ];
 
 export const EMERGENCY_SERVICES = [
