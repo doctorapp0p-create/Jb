@@ -725,7 +725,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'moderator'>('login');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showPayment, setShowPayment] = useState<{show: boolean, amount: number, item: string, shipping: number, isVideo?: boolean, isClinic?: boolean, hospitalName?: string}>({show: false, amount: 0, item: '', shipping: 0});
+  const [showPayment, setShowPayment] = useState<{show: boolean, amount: number, item: string, shipping: number, isVideo?: boolean, isClinic?: boolean, isTest?: boolean, hospitalName?: string}>({show: false, amount: 0, item: '', shipping: 0});
   const [paymentMethod, setPaymentMethod] = useState<'bkash' | 'nagad' | null>(null);
   const [paymentType, setPaymentType] = useState<'online' | 'offline'>('online');
   const [trxId, setTrxId] = useState('');
@@ -787,6 +787,16 @@ export default function App() {
 
   const handleWhatsAppConsult = (doctor: Doctor) => {
     const message = `হ্যালো জেবি হেলথকেয়ার, আমি ডাক্তার ${doctor.name}-এর সিরিয়াল বুকিং করতে চাই।`;
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleWhatsAppBooking = () => {
+    if (!patientName || !contactPhone) {
+      alert('রোগীর নাম এবং ফোন নম্বর দিন।');
+      return;
+    }
+    const totalAmount = showPayment.amount + showPayment.shipping;
+    const message = `হ্যালো জেবি হেলথকেয়ার,\n\nআমি নিচের টেস্টগুলো বুক করতে চাই:\n📝 ${showPayment.item}\n\n💰 মোট টাকা: ৳${totalAmount}\n👤 রোগীর নাম: ${patientName}\n📱 ফোন নম্বর: ${contactPhone}\n\nদয়া করে আমার এই বুকিং টি কনফার্ম করুন।`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -1142,12 +1152,13 @@ export default function App() {
     const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
     const itemNames = cart.map(i => i.name).join(', ');
     const hasEmergency = cart.some(i => i.type === 'emergency');
+    const hasTest = cart.some(i => i.type === 'test');
     const shipping = hasEmergency ? 100 : 0;
     
     if (!patientName && profile?.full_name) setPatientName(profile.full_name);
     if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
     
-    setShowPayment({ show: true, amount: totalAmount, item: itemNames, shipping });
+    setShowPayment({ show: true, amount: totalAmount, item: itemNames, shipping, isTest: hasTest });
   };
 
   const submitOrder = async () => {
@@ -2159,6 +2170,20 @@ export default function App() {
                     <p className="text-4xl font-black">৳{showPayment.amount + showPayment.shipping}</p>
                     <p className="text-[10px] font-black opacity-70 uppercase mt-2 tracking-[0.2em]">Total Bill Payable {showPayment.shipping > 0 ? '(+৳১০০ Home Visit)' : ''}</p>
                  </div>
+
+                 {showPayment.isTest && (
+                   <div className="pt-2">
+                     <button 
+                       onClick={handleWhatsAppBooking}
+                       className="w-full bg-emerald-500 text-white py-5 rounded-[32px] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
+                     >
+                        <span className="text-xl">💬</span> WhatsApp Booking (সরাসরি বুকিং)
+                     </button>
+                     <p className="text-[10px] text-center text-slate-400 font-bold mt-3 uppercase tracking-widest leading-relaxed">
+                        টেস্টের দাম বা অন্যান্য বিষয়ে অ্যাডমিনের সাথে সরাসরি কথা বলতে উপরের বাটনটি ব্যবহার করুন।
+                     </p>
+                   </div>
+                 )}
               </div>
 
               {paymentType === 'online' ? (
