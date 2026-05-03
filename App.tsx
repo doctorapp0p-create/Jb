@@ -777,10 +777,18 @@ export default function App() {
   const [adminSubTab, setAdminSubTab] = useState<'log' | 'users' | 'orders' | 'settings' | 'data'>('log');
   const [adminDataTab, setAdminDataTab] = useState<'doctors' | 'hospitals' | 'tests'>('doctors');
   const [selectedUserRecords, setSelectedUserRecords] = useState<{p: Profile, recs: Prescription[], ords: Order[]} | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  const WHATSAPP_NUMBER = '8801518395772';
+
+  const handleWhatsAppConsult = (doctor: Doctor) => {
+    const message = `হ্যালো জেবি হেলথকেয়ার, আমি ডাক্তার ${doctor.name}-এর সিরিয়াল বুকিং করতে চাই।`;
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -1566,7 +1574,11 @@ export default function App() {
                        {filteredDoctors.length > 0 ? filteredDoctors.map(d => {
                          const hospital = hospitals.find(h => h.id === d.clinics[0]);
                          return (
-                           <Card key={d.id} className="flex gap-4 items-center border-l-4 border-l-blue-600 hover:border-l-8 hover:shadow-lg transition-all">
+                           <Card 
+                            key={d.id} 
+                            onClick={() => setSelectedDoctor(d)}
+                            className="flex gap-4 items-center border-l-4 border-l-blue-600 hover:border-l-8 hover:shadow-lg transition-all cursor-pointer group"
+                           >
                              <img src={d.image} className="w-20 h-20 rounded-3xl object-cover border bg-slate-50 shadow-sm" referrerPolicy="no-referrer" />
                              <div className="flex-1">
                                <div className="flex justify-between items-start">
@@ -1589,32 +1601,37 @@ export default function App() {
                                     {d.consultationFee && <span className="text-[10px] font-black text-blue-600 mt-0.5">Fee: ৳{d.consultationFee}</span>}
                                   </div>
                                   <div className="flex gap-2">
-                                    {d.isVideoConsultant && (
-                                      <button onClick={() => setShowPayment({show: true, amount: d.consultationFee || 500, item: `Video Consult: ${d.name}`, shipping: 0, isVideo: true})} className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1">
-                                        <span>📹</span> Video
-                                      </button>
-                                    )}
-                                    <button 
-                                      onClick={() => {
-                                        const h = hospitals.find(h => h.id === selectedHospitalId) || hospitals.find(h => h.id === d.clinics[0]);
-                                        
-                                        if (!patientName && profile?.full_name) setPatientName(profile.full_name);
-                                        if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
-                                        
-                                        setShowPayment({
-                                          show: true, 
-                                          amount: d.consultationFee || 500, 
-                                          item: `Consultation: ${d.name}`, 
-                                          shipping: 0, 
-                                          isClinic: true,
-                                          hospitalName: h?.name
-                                        });
-                                      }} 
-                                      className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                                    >
-                                      সিরিয়াল নিন
-                                    </button>
-                                  </div>
+                                     <button 
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         handleWhatsAppConsult(d);
+                                       }}
+                                       className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2.5 rounded-xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+                                     >
+                                       <span className="text-xs">💬</span> সিরিয়াল
+                                     </button>
+                                     <button 
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         const h = hospitals.find(h => h.id === selectedHospitalId) || hospitals.find(h => h.id === d.clinics[0]);
+                                         
+                                         if (!patientName && profile?.full_name) setPatientName(profile.full_name);
+                                         if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
+                                         
+                                         setShowPayment({
+                                           show: true, 
+                                           amount: d.consultationFee || 500, 
+                                           item: `Consultation: ${d.name}`, 
+                                           shipping: 0, 
+                                           isClinic: true,
+                                           hospitalName: h?.name
+                                         });
+                                       }} 
+                                       className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                                     >
+                                       পেমেন্ট
+                                     </button>
+                                   </div>
                                </div>
                              </div>
                            </Card>
@@ -2187,6 +2204,100 @@ export default function App() {
       <DownloadFAB />
       <UpdatePrompt />
 
+      {/* Doctor Profile Detail Modal */}
+      <AnimatePresence>
+        {selectedDoctor && (
+          <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-lg rounded-[48px] overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar"
+            >
+              <button 
+                onClick={() => setSelectedDoctor(null)}
+                className="absolute top-6 right-6 z-10 w-10 h-10 bg-black/10 backdrop-blur-md rounded-full flex items-center justify-center text-black font-bold hover:bg-black/20 transition-all shadow-lg"
+              >
+                ✕
+              </button>
+
+              <div className="relative h-64">
+                <img src={selectedDoctor.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent"></div>
+              </div>
+
+              <div className="p-8 -mt-20 relative bg-white rounded-t-[48px] space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">{selectedDoctor.name}</h2>
+                  <p className="text-blue-600 font-bold uppercase text-xs tracking-widest mt-1">{selectedDoctor.specialty} Specialist</p>
+                  <p className="text-slate-400 font-medium italic text-[11px] mt-2 max-w-[80%] mx-auto">{selectedDoctor.degree}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Rating</span>
+                    <span className="text-sm font-black text-slate-800">⭐ {selectedDoctor.rating}</span>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Fee (৳)</span>
+                    <span className="text-sm font-black text-blue-600">৳{selectedDoctor.consultationFee}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-white p-6 rounded-3xl border-2 border-dashed border-slate-100">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Availability
+                    </h4>
+                    <p className="text-sm font-black text-slate-700">{selectedDoctor.schedule}</p>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-3xl border-2 border-dashed border-slate-100">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                       📍 Chamber / Hospital
+                    </h4>
+                    {selectedDoctor.clinics.map(cid => {
+                        const h = hospitals.find(hosp => hosp.id === cid);
+                        return (
+                          <div key={cid} className="mb-2 last:mb-0">
+                            <p className="text-sm font-black text-blue-600">{h?.name}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{h?.address}</p>
+                          </div>
+                        );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => handleWhatsAppConsult(selectedDoctor)}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-[12px]"
+                  >
+                    <span className="text-xl">💬</span> সিরিয়াল দিন
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const h = hospitals.find(hosp => hosp.id === selectedDoctor.clinics[0]);
+                      setShowPayment({
+                        show: true,
+                        amount: selectedDoctor.consultationFee || 500,
+                        item: `Consultation: ${selectedDoctor.name}`,
+                        shipping: 0,
+                        isClinic: true,
+                        hospitalName: h?.name
+                      });
+                      setSelectedDoctor(null);
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all uppercase text-[12px]"
+                  >
+                    অনলাইন পেমেন্ট
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
