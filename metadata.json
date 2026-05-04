@@ -1,5 +1,5 @@
 {
-  "name": "Remix: JB Healthcare - Your Digital Doctor",
+  "name": "JB Healthcare - Your Digital Doctor",
   "description": "A comprehensive healthcare platform offering video consultations, medicine delivery, home lab tests, and hospital directory.",
   "requestFramePermissions": [
     "camera",
