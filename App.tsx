@@ -1497,7 +1497,11 @@ export default function App() {
             <div className="space-y-6">
                <div className="flex justify-between items-center bg-slate-100/50 p-2 rounded-2xl">
                   <h2 className="text-[11px] font-black text-slate-800 uppercase ml-2 tracking-wide">
-                    {homeSubCategory === 'doctors' ? 'বিশেষজ্ঞ ডক্টর' : homeSubCategory === 'hospitals' ? 'হাসপাতাল লিস্ট' : homeSubCategory === 'labtests' ? 'ল্যাব টেস্ট' : 'জরুরি SOS সেবা'}
+                    {homeSubCategory === 'doctors' 
+                      ? (selectedHospitalId 
+                          ? hospitals.find(h => h.id === selectedHospitalId)?.name 
+                          : 'বিশেষজ্ঞ ডক্টর') 
+                      : (homeSubCategory === 'hospitals' ? 'হাসপাতাল লিস্ট' : homeSubCategory === 'labtests' ? 'ল্যাব টেস্ট' : 'জরুরি SOS সেবা')}
                   </h2>
                   <div className="relative">
                     <input 
@@ -1570,6 +1574,12 @@ export default function App() {
 
                     {/* Day Filter Bar */}
                     <div className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-1">
+                      <button
+                        onClick={() => setSelectedDay(null)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-500 border border-slate-100'}`}
+                      >
+                        All
+                      </button>
                       {['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'].map(day => (
                         <button
                           key={day}
