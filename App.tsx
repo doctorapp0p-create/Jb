@@ -1235,22 +1235,15 @@ export default function App() {
   };
 
   const filteredDoctors = useMemo(() => {
-    let list = doctors;
-    if (selectedHospitalId) {
-      const hospital = hospitals.find(h => h.id === selectedHospitalId);
-      list = list.filter(d => 
-        (d.clinics || []).includes(selectedHospitalId) || 
-        (hospital && (hospital.doctors || []).includes(d.id))
-      );
-    }
-    if (selectedSpecialty) list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
-    
-    // Day Filter
-    if (selectedDay) {
-      list = list.filter(d => {
-        const schedule = d.schedule;
-        if (schedule.includes('প্রতিদিন')) {
-          if (schedule.includes('শুক্র বন্ধ') && selectedDay === 'শুক্রবার') return false;
+    let list = doctors.map(d => {
+      // Dynamic availability check for "availableToday"
+      const bnDayNames = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+      const todayBn = bnDayNames[new Date().getDay()];
+      
+      const checkDay = (docSchedule: string, day: string) => {
+        const sched = docSchedule.replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '');
+        if (sched.includes('প্রতিদিন')) {
+          if (sched.includes('শুক্রবন্ধ') && day === 'শুক্রবার') return false;
           return true;
         }
         
@@ -1264,24 +1257,72 @@ export default function App() {
           'শুক্রবার': ['শুক্র']
         };
 
-        const aliases = dayAlias[selectedDay];
-        if (aliases.some(a => schedule.includes(a))) return true;
+        const aliases = dayAlias[day];
+        if (!aliases) return false;
+        const searchDay = aliases[0];
 
-        if (schedule.includes('-')) {
-          const parts = schedule.split(':')[0].split('-');
-          if (parts.length === 2) {
-            const dayOrder = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
-            const startIdx = dayOrder.findIndex(dName => parts[0].trim().includes(dName));
-            const endIdx = dayOrder.findIndex(dName => parts[1].trim().includes(dName));
-            const currentIdx = dayOrder.findIndex(dName => aliases[0] === dName);
-            
-            if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
-              if (startIdx <= endIdx) {
-                return currentIdx >= startIdx && currentIdx <= endIdx;
-              } else {
-                return currentIdx >= startIdx || currentIdx <= endIdx;
-              }
-            }
+        if (sched.includes(searchDay)) return true;
+
+        const parts = sched.split(':')[0].split('-');
+        if (parts.length === 2) {
+          const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+          const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
+          const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
+          const currentIdx = dayOrderList.indexOf(searchDay);
+          
+          if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
+            if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
+            return currentIdx >= startIdx || currentIdx <= endIdx;
+          }
+        }
+        return false;
+      };
+
+      return {
+        ...d,
+        availableToday: checkDay(d.schedule, todayBn)
+      };
+    });
+
+    if (selectedHospitalId) {
+      const hospital = hospitals.find(h => h.id === selectedHospitalId);
+      list = list.filter(d => 
+        (d.clinics || []).includes(selectedHospitalId) || 
+        (hospital && (hospital.doctors || []).includes(d.id))
+      );
+    }
+    if (selectedSpecialty) list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
+    
+    if (selectedDay) {
+      list = list.filter(d => {
+        const dayAlias: Record<string, string[]> = {
+          'শনিবার': ['শনি'],
+          'রবিবার': ['রবি'],
+          'সোমবার': ['সোম'],
+          'মঙ্গলবার': ['মঙ্গল'],
+          'বুধবার': ['বুধ'],
+          'বৃহস্পতিবার': ['বৃহস্পতি'],
+          'শুক্রবার': ['শুক্র']
+        };
+        const sched = d.schedule.replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '');
+        const searchDay = dayAlias[selectedDay][0];
+
+        if (sched.includes('প্রতিদিন')) {
+          if (sched.includes('শুক্রবন্ধ') && selectedDay === 'শুক্রবার') return false;
+          return true;
+        }
+        if (sched.includes(searchDay)) return true;
+
+        const parts = sched.split(':')[0].split('-');
+        if (parts.length === 2) {
+          const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+          const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
+          const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
+          const currentIdx = dayOrderList.indexOf(searchDay);
+          
+          if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
+            if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
+            return currentIdx >= startIdx || currentIdx <= endIdx;
           }
         }
         return false;
@@ -1292,7 +1333,7 @@ export default function App() {
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       d.specialty.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors]);
+  }, [searchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors, hospitals]);
 
   const filteredLabTests = useMemo(() => {
     return labTests.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
