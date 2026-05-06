@@ -1510,7 +1510,7 @@ export default function App() {
         {activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in">
             {/* Category Menu */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
                {[
                  { id: 'doctors', icon: '👨‍⚕️', label: 'ডক্টর' },
                  { id: 'hospitals', icon: '🏥', label: 'হাসপাতাল' },
