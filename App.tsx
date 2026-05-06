@@ -262,8 +262,7 @@ const AdminDashboard: React.FC<{
           { id: 'overview', label: 'Overview', icon: <Zap size={14} /> },
           { id: 'doctors', label: 'Specialists', icon: <Stethoscope size={14} /> },
           { id: 'orders', label: 'Booking Orders', icon: <MessageSquare size={14} /> },
-          { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> },
-          { id: 'labtests', label: 'Lab Tests', icon: <Star size={14} /> }
+          { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -633,7 +632,6 @@ const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           {[
             { icon: <ShieldCheck className="text-blue-600" />, title: "দক্ষ বিশেষজ্ঞ ডক্টর", desc: "নীলফামারীর সেরা বিশেষজ্ঞ ডক্টরদের সিরিয়াল নিন সহজেই।" },
             { icon: <Video className="text-emerald-600" />, title: "ভিডিও কনসাল্টেশন", desc: "দেশের সেরা বিশেষজ্ঞ ডাক্তারদের সাথে সরাসরি কথা বলুন।" },
-            { icon: <Microscope className="text-indigo-600" />, title: "ল্যাব টেস্ট বুকিং", desc: "ঘরে বসেই ল্যাব টেস্ট বুক করুন এবং রিপোর্ট পান।" },
             { icon: <Ambulance className="text-red-600" />, title: "জরুরি SOS সেবা", desc: "২৪/৭ জরুরি অ্যাম্বুলেন্স এবং অক্সিজেন সাপোর্ট।" }
           ].map((f, i) => (
             <motion.div 
@@ -1516,7 +1514,6 @@ export default function App() {
                {[
                  { id: 'doctors', icon: '👨‍⚕️', label: 'ডক্টর' },
                  { id: 'hospitals', icon: '🏥', label: 'হাসপাতাল' },
-                 { id: 'labtests', icon: '🔬', label: 'ল্যাব টেস্ট' },
                  { id: 'emergency', icon: '🆘', label: 'SOS সেবা' }
                ].map(cat => (
                  <button 
