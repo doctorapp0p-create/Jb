@@ -28,7 +28,7 @@ import {
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope } from 'lucide-react';
+import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- UI Components ---
@@ -623,6 +623,21 @@ const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
 
       {/* Features Section */}
       <section className="px-8 py-20 space-y-12 bg-white">
+        {/* Discount Banner */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-blue-50 border-2 border-blue-100 p-6 rounded-[32px] flex items-center gap-5 shadow-xl shadow-blue-500/5"
+        >
+          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg animate-bounce">
+            <Percent size={28} />
+          </div>
+          <p className="text-[13px] font-black text-blue-900 leading-snug">
+            অ্যাপস বা ওয়েব সাইটের মাধ্যমে রোগীর সিরিয়াল দিলে সকল পরীক্ষা-নিরীক্ষায় ২০ % পর্যন্ত ডিসকাউন্ট।
+          </p>
+        </motion.div>
+
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">আমাদের সেবাসমূহ</h2>
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">কেন আমাদের বেছে নেবেন?</p>
@@ -1509,27 +1524,46 @@ export default function App() {
         
         {activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in">
-            {/* Category Menu */}
-            <div className="grid grid-cols-3 gap-2">
-               {[
-                 { id: 'doctors', icon: '👨‍⚕️', label: 'ডক্টর' },
-                 { id: 'hospitals', icon: '🏥', label: 'হাসপাতাল' },
-                 { id: 'emergency', icon: '🆘', label: 'SOS সেবা' }
-               ].map(cat => (
-                 <button 
-                   key={cat.id} 
-                   onClick={() => { 
-                     setHomeSubCategory(cat.id as any); 
-                     setSelectedHospitalId(null); 
-                     setSearchTerm(''); 
-                     setSelectedSpecialty(null);
-                   }}
-                   className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${homeSubCategory === cat.id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-400 border border-slate-50'}`}
-                 >
-                   <span className="text-xl">{cat.icon}</span>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-center">{cat.label}</span>
-                 </button>
-               ))}
+            {/* Promo Banner */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 rounded-[28px] text-white shadow-lg relative overflow-hidden">
+               <div className="relative z-10 flex items-center gap-4">
+                 <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shrink-0">
+                    <Percent size={20} className="text-white" />
+                 </div>
+                 <p className="text-[11px] font-bold leading-tight">
+                   অ্যাপস বা ওয়েব সাইটের মাধ্যমে রোগীর সিরিয়াল দিলে সকল পরীক্ষা-নিরীক্ষায় ২০ % পর্যন্ত ডিসকাউন্ট।
+                 </p>
+               </div>
+               <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                আমাদের সেবাসমূহ
+              </h2>
+              {/* Category Menu */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'doctors', icon: '👨‍⚕️', label: 'ডক্টর' },
+                  { id: 'hospitals', icon: '🏥', label: 'হাসপাতাল' },
+                  { id: 'emergency', icon: '🆘', label: 'SOS সেবা' }
+                ].map(cat => (
+                  <button 
+                    key={cat.id} 
+                    onClick={() => { 
+                      setHomeSubCategory(cat.id as any); 
+                      setSelectedHospitalId(null); 
+                      setSearchTerm(''); 
+                      setSelectedSpecialty(null);
+                    }}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${homeSubCategory === cat.id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-400 border border-slate-50'}`}
+                  >
+                    <span className="text-xl">{cat.icon}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-center">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Today's Doctors Banner */}
