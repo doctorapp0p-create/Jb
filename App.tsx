@@ -580,7 +580,7 @@ const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             <span className="text-blue-600">ডিজিটাল ডাক্তার</span>
           </h1>
           
-          <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs mx-auto">
+          <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-xs mx-auto">
             জেবি হেলথকেয়ারে আপনি পাচ্ছেন এআই ডাক্তার পরামর্শ, ভিডিও কনসাল্টেশন এবং জরুরি স্বাস্থ্যসেবা।
           </p>
           
@@ -591,6 +591,9 @@ const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             >
               শুরু করুন <ArrowRight size={20} />
             </button>
+            <p className="text-blue-600 text-lg font-black mt-8 text-center px-4 leading-snug">
+              নীলফামারী জেলার সকল হাসপাতাল বা ক্লিনিক রোগীদের তথ্য প্রদানকারী পোর্টাল।
+            </p>
           </div>
         </motion.div>
 
