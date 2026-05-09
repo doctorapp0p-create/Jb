@@ -720,7 +720,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [contactPhone, setContactPhone] = useState('');
   const [patientName, setPatientName] = useState('');
-  const [tickerMessage, setTickerMessage] = useState('জেবি হেলথকেয়ারে আপনাকে স্বাগত! যেকোনো প্রয়োজনে কল করুন: ০১৫১৮৩৯৫৭৭২');
+  const [tickerMessage, setTickerMessage] = useState('জেবি হেলথকেয়ারে আপনাকে স্বাগত! ডাক্তার চেম্বারে বসার সময় এবং ডাক্তার ফি চূড়ান্ত জানার জন্য আমাদের হট লাইন নাম্বারে যোগাযোগ করুন। যেকোনো প্রয়োজনে কল করুন: ০১৫১৮৩৯৫৭৭২');
 
   // Specialty Scroll Ref
   const specialtyScrollRef = useRef<HTMLDivElement>(null);
@@ -1496,8 +1496,8 @@ export default function App() {
           </AnimatePresence>
 
           {/* Ticker */}
-          <div className="bg-red-600 text-white py-2 overflow-hidden whitespace-nowrap z-50 shadow-md">
-            <div className="animate-marquee inline-block pl-[100%] font-black text-[10px] uppercase tracking-wider">
+          <div className="bg-red-600 text-white py-3 overflow-hidden whitespace-nowrap z-50 shadow-md border-b-2 border-red-700">
+            <div className="animate-marquee inline-block pl-[100%] font-black text-sm uppercase tracking-wider">
               {tickerMessage} • ইমারজেন্সি হেল্পলাইন: ০১৫১৮৩৯৫৭৭২ • 
             </div>
           </div>
