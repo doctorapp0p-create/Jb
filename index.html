@@ -32,15 +32,6 @@
     }
     </script>
     
-    <!-- PWA / Mobile Optimizations -->
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#2563eb">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="JB Health">
-    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1505751172107-5739a007721e?auto=format&fit=crop&q=80&w=192">
-
     <!-- Safe process shim to prevent white screen -->
     <script>
       window.process = { env: { API_KEY: "" } };
@@ -103,39 +94,5 @@
 <body class="antialiased select-none">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      // Service Worker registration with update detection
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => {
-              console.log('SW Registered');
-              
-              // Handle updates
-              reg.onupdatefound = () => {
-                const installingWorker = reg.installing;
-                installingWorker.onstatechange = () => {
-                  if (installingWorker.state === 'installed') {
-                    if (navigator.serviceWorker.controller) {
-                      // New content is available, show notification in App.tsx
-                      window.dispatchEvent(new CustomEvent('swUpdateAvailable'));
-                    }
-                  }
-                };
-              };
-            })
-            .catch(err => console.log('SW registration failed:', err));
-
-          // Reload page when new service worker takes control
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-              refreshing = true;
-              window.location.reload();
-            }
-          });
-        });
-      }
-    </script>
 </body>
 </html>

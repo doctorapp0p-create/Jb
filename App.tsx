@@ -85,6 +85,22 @@ const Button: React.FC<{
   );
 };
 
+// --- Offline Banner ---
+const OfflineBanner: React.FC = () => {
+  return (
+    <motion.div 
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      className="bg-rose-600 text-white text-center py-2 relative z-[60]"
+    >
+      <p className="text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+        আপনি বর্তমানে অফলাইনে আছেন। কিছু সার্ভিস সীমিত হতে পারে।
+      </p>
+    </motion.div>
+  );
+};
+
 // --- Update Notification for PWA ---
 const UpdatePrompt: React.FC = () => {
   const [show, setShow] = useState(false);
@@ -798,6 +814,20 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const WHATSAPP_NUMBER = '8801518395772';
 
@@ -2313,6 +2343,7 @@ export default function App() {
 
       <DownloadFAB />
       <UpdatePrompt />
+      {!isOnline && <OfflineBanner />}
 
       {/* Doctor Profile Detail Modal */}
       <AnimatePresence>
