@@ -1323,7 +1323,7 @@ export default function App() {
       setContactPhone('');
       setPatientName('');
       setPaymentType('online');
-      alert('আপনার সিরিয়াল বুকিং রিকুয়েস্ট দেওয়া হয়েছে দয়া করে একটু অপেক্ষা করুন ।');
+      alert('আপনার রিকুয়েস্ট গ্রহণ করা হয়েছে। দয়া করে একটু অপেক্ষা করুন।');
       fetchUserData();
     };
 
@@ -1709,7 +1709,7 @@ export default function App() {
                               <p className="text-[10px] font-black leading-tight mb-1">{vd.name}</p>
                               <p className="text-[8px] opacity-70 mb-2">{vd.specialty}</p>
                               <button 
-                                onClick={() => setShowPayment({show: true, amount: vd.consultationFee || 500, item: `Video Consult: ${vd.name}`, shipping: 0, isVideo: true})}
+                                onClick={() => handleWhatsAppConsult(vd)}
                                 className="bg-white text-blue-600 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-lg"
                               >
                                 Call Now
