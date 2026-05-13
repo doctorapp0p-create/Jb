@@ -19,6 +19,7 @@ service cloud.firestore {
     function isAdmin() { 
       return isSignedIn() && (
         request.auth.token.email == 'doctorapp0p@gmail.com' || 
+        request.auth.token.email == 'moderator@nilpha.com' ||
         getUserData().role == 'ADMIN'
       ); 
     }
@@ -43,7 +44,10 @@ service cloud.firestore {
     match /profiles/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && incoming().role == 'PATIENT' && incoming().status == 'active';
+      allow create: if isOwner(userId) && (
+        (incoming().role == 'PATIENT' && incoming().status == 'active') ||
+        (request.auth.token.email == 'moderator@nilpha.com' && incoming().role == 'ADMIN')
+      );
       allow update: if isAdmin() || (
         isOwner(userId) && 
         incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'phone'])

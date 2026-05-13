@@ -817,6 +817,17 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
+    const handleInitialPath = () => {
+      const path = window.location.pathname;
+      if (path === '/admin' || path === '/wp-admin') {
+        setAuthMode('moderator');
+        setShowAuthModal(true);
+        // Clean up the URL
+        window.history.replaceState({}, '', '/');
+      }
+    };
+    handleInitialPath();
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -906,15 +917,9 @@ export default function App() {
 
   useEffect(() => {
     const init = async () => {
-      const savedModerator = localStorage.getItem('jb_moderator_session');
-      if (savedModerator) {
-        const mod = JSON.parse(savedModerator);
-        setUser({ id: mod.id, email: 'admin@jb.com' });
-        setProfile(mod);
-      } else {
-        onAuthStateChanged(auth, async (firebaseUser) => {
-          if (firebaseUser) {
-            setUser(firebaseUser);
+      onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          setUser(firebaseUser);
             try {
               const profileRef = doc(db, 'profiles', firebaseUser.uid);
               const profileSnap = await getDoc(profileRef);
@@ -931,7 +936,13 @@ export default function App() {
                 await setDoc(profileRef, newProf);
                 setProfile(newProf);
               } else {
-                setProfile(profileSnap.data() as Profile);
+                let prof = profileSnap.data() as Profile;
+                // Force update role if it's the owner email
+                if (firebaseUser.email === 'doctorapp0p@gmail.com' && prof.role !== UserRole.ADMIN) {
+                  prof.role = UserRole.ADMIN;
+                  await updateDoc(profileRef, { role: UserRole.ADMIN });
+                }
+                setProfile(prof);
               }
             } catch (error) {
               handleFirestoreError(error, OperationType.GET, `profiles/${firebaseUser.uid}`);
@@ -941,7 +952,6 @@ export default function App() {
             setProfile(null);
           }
         });
-      }
 
       try {
         const settingsRef = doc(db, 'settings', 'ticker_message');
@@ -1013,7 +1023,7 @@ export default function App() {
 
   const fetchAdminData = async () => {
     try {
-      const profRes = await getDocs(query(collection(db, 'profiles'), orderBy('id', 'desc'))); // Using id as fallback for created_at if missing
+      const profRes = await getDocs(query(collection(db, 'profiles'), orderBy('full_name', 'asc'))); // Sorting by full_name instead of missing 'id' field
       const presRes = await getDocs(query(collection(db, 'prescriptions'), orderBy('created_at', 'desc')));
       const ordRes = await getDocs(query(collection(db, 'orders'), orderBy('created_at', 'desc')));
       
@@ -1060,12 +1070,44 @@ export default function App() {
 
     try {
       if (authMode === 'moderator') {
-        if (emailVal === 'modaretor' && passVal === 'jagad01750') {
-          const modProf: Profile = { id: 'mod-master-id', full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01518395772' };
-          setUser({ id: modProf.id, email: 'admin@jb.com' });
+        if ((emailVal === 'moderator' || emailVal === 'modaretor') && passVal === 'jagad01750') {
+          const modEmail = 'moderator@nilpha.com';
+          const modPass = 'jagad01750';
+          let firebaseUser;
+          
+          try {
+            const cred = await signInWithEmailAndPassword(auth, modEmail, modPass);
+            firebaseUser = cred.user;
+          } catch (signInErr: any) {
+            if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') {
+              const cred = await createUserWithEmailAndPassword(auth, modEmail, modPass);
+              firebaseUser = cred.user;
+              const newModProf: Profile = { 
+                id: firebaseUser.uid, 
+                full_name: 'Main Moderator', 
+                role: UserRole.ADMIN, 
+                status: 'active', 
+                phone: '01518395772' 
+              };
+              await setDoc(doc(db, 'profiles', firebaseUser.uid), newModProf);
+            } else {
+              throw signInErr;
+            }
+          }
+
+          const profileRef = doc(db, 'profiles', firebaseUser.uid);
+          const profileSnap = await getDoc(profileRef);
+          let modProf = profileSnap.data() as Profile;
+          
+          if (!modProf) {
+            modProf = { id: firebaseUser.uid, full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01518395772' };
+            await setDoc(profileRef, modProf);
+          }
+
+          setUser(firebaseUser);
           setProfile(modProf);
-          localStorage.setItem('jb_moderator_session', JSON.stringify(modProf));
           setShowAuthModal(false);
+          return;
         } else {
           throw new Error('ভুল ইউজারনেম বা পাসওয়ার্ড!');
         }
@@ -1180,7 +1222,6 @@ export default function App() {
   };
 
   const logout = async () => {
-    localStorage.removeItem('jb_moderator_session');
     await signOut(auth);
     window.location.reload();
   };
