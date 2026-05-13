@@ -762,6 +762,17 @@ export default function App() {
   const [paymentType, setPaymentType] = useState<'online' | 'offline'>('online');
   const [trxId, setTrxId] = useState('');
   
+  // Serial Form State
+  const [showSerialModal, setShowSerialModal] = useState(false);
+  const [serialStep, setSerialStep] = useState(0);
+  const [bookingDoctor, setBookingDoctor] = useState<Doctor | null>(null);
+  const [serialData, setSerialData] = useState({
+    patientInfo: '',
+    date: '',
+    problems: '',
+    previousDoctor: ''
+  });
+  
   // Firestore Error Handling Helper
   enum OperationType {
     CREATE = 'create',
@@ -843,8 +854,29 @@ export default function App() {
   const WHATSAPP_NUMBER = '8801518395772';
 
   const handleWhatsAppConsult = (doctor: Doctor) => {
-    const message = `হ্যালো জেবি হেলথকেয়ার, আমি ডাক্তার ${doctor.name}-এর সিরিয়াল বুকিং করতে চাই।`;
+    setBookingDoctor(doctor);
+    setSerialStep(0);
+    setSerialData({
+      patientInfo: '',
+      date: '',
+      problems: '',
+      previousDoctor: ''
+    });
+    setShowSerialModal(true);
+  };
+
+  const finalizeSerialBooking = () => {
+    if (!bookingDoctor) return;
+    
+    let message = `হ্যালো জেবি হেলথকেয়ার, আমি ডাক্তার ${bookingDoctor.name}-এর সিরিয়াল বুকিং করতে চাই।\n\n`;
+    message += `👤 রোগীর তথ্য (নাম, বয়স, ঠিকানা): ${serialData.patientInfo}\n`;
+    message += `📅 পরামর্শের তারিখ: ${serialData.date}\n`;
+    message += `🩺 সমস্যা: ${serialData.problems}\n`;
+    message += `👨‍⚕️ আগের ডক্টর: ${serialData.previousDoctor}`;
+
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+    setShowSerialModal(false);
+    setBookingDoctor(null);
   };
 
   const handleWhatsAppBooking = () => {
@@ -1759,46 +1791,25 @@ export default function App() {
                                    <span className="opacity-80">📍</span> {hospital?.name || 'চেম্বার'}
                                  </p>
                                </div>
-                               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-50">
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-emerald-600 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                        {d.schedule}
-                                    </span>
-                                    {d.consultationFee && <span className="text-[10px] font-black text-blue-600 mt-0.5">Fee: ৳{d.consultationFee}</span>}
+                               <div className="mt-3 pt-3 border-t border-slate-50 space-y-4">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex flex-col">
+                                      <span className="text-[9px] font-black text-emerald-600 flex items-center gap-1.5">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                          {d.schedule}
+                                      </span>
+                                      {d.consultationFee && <span className="text-[10px] font-black text-blue-600 mt-0.5">Fee: ৳{d.consultationFee}</span>}
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                     <button 
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         handleWhatsAppConsult(d);
-                                       }}
-                                       className="text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2.5 rounded-xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5"
-                                     >
-                                       <span className="text-xs">💬</span> সিরিয়াল
-                                     </button>
-                                     <button 
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         const h = hospitals.find(h => h.id === selectedHospitalId) || hospitals.find(h => h.id === d.clinics[0]);
-                                         
-                                         if (!patientName && profile?.full_name) setPatientName(profile.full_name);
-                                         if (!contactPhone && profile?.phone) setContactPhone(profile.phone);
-                                         
-                                         setShowPayment({
-                                           show: true, 
-                                           amount: d.consultationFee || 500, 
-                                           item: `Consultation: ${d.name}`, 
-                                           shipping: 0, 
-                                           isClinic: true,
-                                           hospitalName: h?.name
-                                         });
-                                       }} 
-                                       className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                                     >
-                                       পেমেন্ট
-                                     </button>
-                                   </div>
+                                  <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       handleWhatsAppConsult(d);
+                                     }}
+                                     className="w-full text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3.5 rounded-2xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                   >
+                                     <span className="text-sm">📅</span> সিরিয়াল দিন
+                                   </button>
                                </div>
                              </div>
                            </Card>
@@ -2452,27 +2463,12 @@ export default function App() {
 
                 <div className="flex gap-3 pt-4">
                   <button 
-                    onClick={() => handleWhatsAppConsult(selectedDoctor)}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-[12px]"
-                  >
-                    <span className="text-xl">💬</span> সিরিয়াল দিন
-                  </button>
-                  <button 
                     onClick={() => {
-                      const h = hospitals.find(hosp => hosp.id === selectedDoctor.clinics[0]);
-                      setShowPayment({
-                        show: true,
-                        amount: selectedDoctor.consultationFee || 500,
-                        item: `Consultation: ${selectedDoctor.name}`,
-                        shipping: 0,
-                        isClinic: true,
-                        hospitalName: h?.name
-                      });
-                      setSelectedDoctor(null);
+                      handleWhatsAppConsult(selectedDoctor);
                     }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all uppercase text-[12px]"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-[12px]"
                   >
-                    অনলাইন পেমেন্ট
+                    <span className="text-xl">📅</span> সিরিয়াল দিন
                   </button>
                 </div>
               </div>
@@ -2480,6 +2476,80 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Serial Booking Multi-Step Modal */}
+      {showSerialModal && bookingDoctor && (
+        <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 text-center">
+           <Card className="w-full max-w-sm p-10 space-y-8 animate-in zoom-in-95 duration-200 rounded-[48px]">
+              <div className="space-y-4">
+                <div className="w-20 h-20 bg-blue-50 rounded-[28px] flex items-center justify-center mx-auto text-blue-600 text-3xl shadow-xl border-4 border-white mb-6 overflow-hidden">
+                   <img src={bookingDoctor.image} className="w-full h-full object-cover" />
+                </div>
+                
+                <AnimatePresence mode="wait">
+                  {serialStep === 0 && (
+                    <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                       <h3 className="text-xl font-black text-slate-800 tracking-tight">হ্যালো জেবি হেলথকেয়ার</h3>
+                       <p className="text-[12px] font-medium text-slate-500 leading-relaxed italic">আমি ডাক্তার <span className="text-blue-600 font-black">{bookingDoctor.name}</span>-এর সিরিয়াল দিতে চাই।</p>
+                       <Button onClick={() => setSerialStep(1)} className="w-full py-5 rounded-[28px]">সিরিয়াল শুরু করুন</Button>
+                    </motion.div>
+                  )}
+                  {serialStep === 1 && (
+                    <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                       <h3 className="text-[15px] font-black text-slate-800 tracking-tight leading-tight">আপনার রোগীর নাম, বয়স এবং ঠিকানাটা দিন?</h3>
+                       <textarea 
+                         className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-3xl p-5 text-sm font-bold outline-none h-32"
+                         placeholder="যেমন: রহিম, ৪৫ বছর, নীলফামারী"
+                         value={serialData.patientInfo}
+                         onChange={(e) => setSerialData({...serialData, patientInfo: e.target.value})}
+                       />
+                       <Button disabled={!serialData.patientInfo} onClick={() => setSerialStep(2)} className="w-full py-5 rounded-[28px]">পরবর্তী ধাপ</Button>
+                    </motion.div>
+                  )}
+                  {serialStep === 2 && (
+                    <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                       <h3 className="text-[15px] font-black text-slate-800 tracking-tight leading-tight">আপনি কবে ডাক্তারের পরামর্শ নিতে চান?</h3>
+                       <Input 
+                         label="পছন্দসই তারিখ" 
+                         type="text" 
+                         placeholder="যেমন: ২০ মে অথবা আগামীকাল" 
+                         value={serialData.date}
+                         onChange={(val) => setSerialData({...serialData, date: val})}
+                       />
+                       <Button disabled={!serialData.date} onClick={() => setSerialStep(3)} className="w-full py-5 rounded-[28px]">পরবর্তী ধাপ</Button>
+                    </motion.div>
+                  )}
+                  {serialStep === 3 && (
+                    <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                       <h3 className="text-[15px] font-black text-slate-800 tracking-tight leading-tight">আপনার রোগীর কি কি সমস্যা?</h3>
+                       <textarea 
+                         className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-3xl p-5 text-sm font-bold outline-none h-32"
+                         placeholder="সমস্যাগুলো এখানে সংক্ষেপে লিখুন"
+                         value={serialData.problems}
+                         onChange={(e) => setSerialData({...serialData, problems: e.target.value})}
+                       />
+                       <Button disabled={!serialData.problems} onClick={() => setSerialStep(4)} className="w-full py-5 rounded-[28px]">পরবর্তী ধাপ</Button>
+                    </motion.div>
+                  )}
+                  {serialStep === 4 && (
+                    <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                       <h3 className="text-[15px] font-black text-slate-800 tracking-tight leading-tight">আপনি কি এর আগে কোন ডক্টরকে দেখিয়েছেন?</h3>
+                       <Input 
+                         label="ডাক্তারের নাম (থাকলে)" 
+                         placeholder="হ্যাঁ / না অথবা ডাক্তারের নাম লিখুন" 
+                         value={serialData.previousDoctor}
+                         onChange={(val) => setSerialData({...serialData, previousDoctor: val})}
+                       />
+                       <Button disabled={!serialData.previousDoctor} onClick={finalizeSerialBooking} className="w-full py-5 rounded-[28px] bg-emerald-500 shadow-emerald-500/20">বুকিং সম্পন্ন করুন (WhatsApp)</Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                <button onClick={() => setShowSerialModal(false)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors pt-4">বাতিল করুন</button>
+              </div>
+           </Card>
+        </div>
+      )}
     </div>
   );
 }
