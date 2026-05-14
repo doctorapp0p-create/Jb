@@ -2,7 +2,8 @@
 export enum UserRole {
   PATIENT = 'PATIENT',
   DOCTOR = 'DOCTOR',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  MODERATOR = 'MODERATOR'
 }
 
 export interface Profile {

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { UserRole, Doctor, Clinic, Medicine, Order, Profile, Prescription, LabTest } from './types';
 import { DOCTORS, CLINICS, MEDICINES, EMERGENCY_SERVICES, DISTRICTS, LAB_TESTS, SPECIALTIES } from './constants';
 import { gemini } from './services/geminiService';
@@ -323,9 +323,19 @@ const AdminDashboard: React.FC<{
               </Button>
             </div>
 
+            {/* Website Export Info */}
             <div className="bg-blue-600 p-8 rounded-[40px] text-white space-y-4">
                <h3 className="font-black uppercase tracking-tight flex items-center gap-2"><Smartphone size={20} /> Website Export Info</h3>
                <p className="text-[11px] font-medium leading-relaxed opacity-80">আপনি Hostinger-এ মেজবানি করার জন্য আপনার কোডটি 'Build' করে সেখানে আপলোড করতে পারেন। এতে আপনার কোনো খরচ হবে না।</p>
+            </div>
+
+            {/* Database Reset Section */}
+            <div className="bg-rose-50 border-2 border-rose-100 p-8 rounded-[40px] space-y-4">
+              <h3 className="font-black text-rose-600 uppercase tracking-tight flex items-center gap-2 underline decoration-rose-200">System Maintenance</h3>
+              <p className="text-[11px] font-bold text-rose-900/60 leading-relaxed uppercase">সম্পূর্ণ ডাটাবেস রিসেট করে ডিফল্ট ডক্টর এবং হসপিটাল লিস্ট লোড করতে নিচের বাটনটি ব্যবহার করুন। এটি বর্তমানে থাকা সকল ম্যানুয়াল ডাটা মুছে ফেলবে।</p>
+              <Button onClick={() => (window as any).seedDatabase()} variant="destructive" className="w-full py-5 rounded-[28px] shadow-lg shadow-rose-500/20">
+                Clear & Reset Database (Default Seed)
+              </Button>
             </div>
           </div>
         )}
@@ -733,6 +743,7 @@ export default function App() {
   const [homeSubCategory, setHomeSubCategory] = useState<'doctors' | 'hospitals' | 'labtests' | 'emergency'>('doctors');
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const isAdmin = useMemo(() => profile?.role === UserRole.ADMIN || profile?.role === UserRole.MODERATOR, [profile]);
   const [isLoading, setIsLoading] = useState(true);
   const [contactPhone, setContactPhone] = useState('');
   const [patientName, setPatientName] = useState('');
@@ -1017,26 +1028,13 @@ export default function App() {
       const dbHospitals = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
       const dbTests = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
 
-      // Merge constants with DB data to ensure no "missing" information from new updates
-      const mergedDoctors = [...DOCTORS];
-      dbDoctors.forEach(dbD => {
-        const idx = mergedDoctors.findIndex(d => d.id === dbD.id);
-        if (idx !== -1) mergedDoctors[idx] = dbD; // Prefer DB version if exists
-        else mergedDoctors.push(dbD);
-      });
-
-      const mergedHospitals = [...CLINICS];
-      dbHospitals.forEach(dbH => {
-        const idx = mergedHospitals.findIndex(h => h.id === dbH.id);
-        if (idx !== -1) mergedHospitals[idx] = dbH;
-        else mergedHospitals.push(dbH);
-      });
-
-      setDoctors(mergedDoctors);
-      setHospitals(mergedHospitals);
+      // Use source of truth (DB) if it has data, otherwise fallback to constants for initial load
+      setDoctors(dbDoctors.length > 0 ? dbDoctors : DOCTORS);
+      setHospitals(dbHospitals.length > 0 ? dbHospitals : CLINICS);
       setLabTests(dbTests.length > 0 ? dbTests : LAB_TESTS);
     } catch (error) {
        console.error("Error fetching data:", error);
+       // Fallback to constants on error
        setDoctors(DOCTORS);
        setHospitals(CLINICS);
        setLabTests(LAB_TESTS);
@@ -1404,11 +1402,7 @@ export default function App() {
     });
 
     if (selectedHospitalId) {
-      const hospital = hospitals.find(h => h.id === selectedHospitalId);
-      list = list.filter(d => 
-        (d.clinics || []).includes(selectedHospitalId) || 
-        (hospital && (hospital.doctors || []).includes(d.id))
-      );
+      list = list.filter(d => (d.clinics || []).includes(selectedHospitalId));
     }
     if (selectedSpecialty) list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
     
@@ -1424,7 +1418,9 @@ export default function App() {
           'শুক্রবার': ['শুক্র']
         };
         const sched = d.schedule.replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '');
-        const searchDay = dayAlias[selectedDay][0];
+        const aliasArr = dayAlias[selectedDay];
+        if (!aliasArr) return false;
+        const searchDay = aliasArr[0];
 
         if (sched.includes('প্রতিদিন')) {
           if (sched.includes('শুক্রবন্ধ') && selectedDay === 'শুক্রবার') return false;
@@ -1448,10 +1444,15 @@ export default function App() {
       });
     }
 
-    return list.filter(d => 
-      d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      d.specialty.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return list.filter(d => {
+      const search = searchTerm.toLowerCase();
+      const docName = d.name.toLowerCase();
+      const docSpecialty = d.specialty.toLowerCase();
+      const docClinics = d.clinics || [];
+      const hospitalMatch = hospitals.some(h => docClinics.includes(h.id) && h.name.toLowerCase().includes(search));
+      
+      return docName.includes(search) || docSpecialty.includes(search) || hospitalMatch;
+    });
   }, [searchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors, hospitals]);
 
   const filteredLabTests = useMemo(() => {
@@ -1488,8 +1489,8 @@ export default function App() {
     }
   };
 
-  const seedDatabase = async () => {
-    if (!user || profile?.role !== UserRole.ADMIN || !confirm('এটি আপনার ফায়ারবেস অ্যাকাউন্টে প্রাথমিক ডেটা যোগ করবে। আপনি কি নিশ্চিত?')) return;
+  const seedDatabase = useCallback(async () => {
+    if (!user || !isAdmin || !confirm('এটি আপনার ফায়ারবেস অ্যাকাউন্টে প্রাথমিক ডেটা যোগ করবে। আপনি কি নিশ্চিত?')) return;
     setIsProcessing(true);
     try {
       const batch = writeBatch(db);
@@ -1506,7 +1507,13 @@ export default function App() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [user, profile, fetchData]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      (window as any).seedDatabase = seedDatabase;
+    }
+  }, [seedDatabase, user, isAdmin]);
 
   const handleDeleteData = async (type: 'doctor' | 'hospital' | 'lab_test', id: string) => {
     if (!user || profile?.role !== UserRole.ADMIN) {
@@ -1544,7 +1551,7 @@ export default function App() {
 
   // --- Update ticker message in database ---
   const updateTicker = async () => {
-    if (!user || profile?.role !== UserRole.ADMIN) return;
+    if (!user || !isAdmin) return;
     setIsProcessing(true);
     try {
       await setDoc(doc(db, 'settings', 'ticker_message'), { key: 'ticker_message', value: tickerMessage });
@@ -1639,6 +1646,14 @@ export default function App() {
                </div>
                <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </div>
+
+            {/* WhatsApp Inquiry Button */}
+            <button 
+              onClick={() => window.open('https://wa.me/8801518395772?text=Hello,%20I%20want%20to%20know%20more%20about%20doctors', '_blank')}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white p-5 rounded-[32px] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-4 border-emerald-700"
+            >
+              <span className="text-xl">💬</span> ডাক্তার সম্পর্কিত জানতে whatsapp এ যোগাযোগ করুন
+            </button>
 
             <div className="space-y-4">
               <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
@@ -1827,7 +1842,7 @@ export default function App() {
 
                {homeSubCategory === 'hospitals' && (
                  <div className="space-y-4 pb-36">
-                    {hospitals.map(c => (
+                    {hospitals.filter(h => doctors.some(d => (d.clinics || []).includes(h.id))).map(c => (
                       <Card key={c.id} className="p-0 overflow-hidden relative cursor-pointer group" onClick={() => { setSelectedHospitalId(c.id); setHomeSubCategory('doctors'); }}>
                          <img src={c.image} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500" />
                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-6 text-white">
@@ -1929,7 +1944,7 @@ export default function App() {
             <div className="flex bg-slate-100 p-1.5 rounded-[22px]">
               <button onClick={() => setHistoryTab('info')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${historyTab === 'info' ? 'bg-white shadow-md text-blue-600' : 'text-slate-400'}`}>Account</button>
               <button onClick={() => setHistoryTab('history')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${historyTab === 'history' ? 'bg-white shadow-md text-blue-600' : 'text-slate-400'}`}>Medical Log</button>
-              {profile?.role === UserRole.ADMIN && (
+              {isAdmin && (
                 <button onClick={() => setHistoryTab('admin')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${historyTab === 'admin' ? 'bg-white shadow-md text-red-600' : 'text-slate-400'}`}>Moderator</button>
               )}
             </div>
@@ -1960,13 +1975,13 @@ export default function App() {
                           <div className="flex items-center gap-3">
                             <img src={d.image} className="w-10 h-10 rounded-lg object-cover border" />
                             <div>
-                              <p className="text-xs font-black">{d.name}</p>
-                              <p className="text-[9px] text-slate-400">{d.specialty} • {d.degree}</p>
+                               <p className="text-xs font-black">{d.name}</p>
+                               <p className="text-[9px] text-slate-400">{d.specialty} • {d.degree}</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => { setEditingItem(d); setTempImage(d.image); setShowAddModal(true); }} className="text-blue-600 text-[10px] font-black uppercase">Edit</button>
-                            <button onClick={() => handleDeleteData('doctor', d.id)} className="text-red-600 text-[10px] font-black uppercase">Del</button>
+                             <button onClick={() => { setEditingItem(d); setTempImage(d.image); setShowAddModal(true); }} className="text-blue-600 text-[10px] font-black uppercase">Edit</button>
+                             <button onClick={() => handleDeleteData('doctor', d.id)} className="text-red-600 text-[10px] font-black uppercase">Del</button>
                           </div>
                         </Card>
                       ))}
@@ -2049,14 +2064,26 @@ export default function App() {
                 )}
 
                 {adminSubTab === 'settings' && (
-                  <div className="space-y-4">
-                     <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mb-4">
+                  <div className="space-y-6 pb-20">
+                     <div className="bg-amber-50 p-6 rounded-[32px] border border-amber-100">
                        <p className="text-[10px] font-black text-amber-700 uppercase mb-2">Database Setup</p>
-                       <p className="text-[9px] text-amber-600 mb-3 leading-relaxed">যদি সেভ না হয়, তবে প্রথমে এই বাটনটি ক্লিক করে আপনার সুপাবেস অ্যাকাউন্টে টেবিলগুলোর ডেটা সিড করুন।</p>
-                       <Button variant="secondary" className="w-full py-3 text-amber-700 border border-amber-200" onClick={seedDatabase} loading={isProcessing}>Setup Database (Seed)</Button>
+                       <p className="text-[9px] text-amber-600 mb-4 leading-relaxed uppercase font-bold">যদি সেভ না হয়, তবে প্রথমে এই বাটনটি ক্লিক করে আপনার অ্যাকাউন্টে টেবিলগুলোর ডেটা সিড করুন।</p>
+                       <Button variant="secondary" className="w-full py-4 text-amber-700 border border-amber-200 rounded-2xl" onClick={seedDatabase} loading={isProcessing}>Setup Database (Seed)</Button>
                      </div>
-                     <textarea value={tickerMessage} onChange={(e) => setTickerMessage(e.target.value)} className="w-full bg-white border-2 p-4 rounded-[32px] text-sm h-32 outline-none focus:border-blue-500 transition-all" />
-                     <Button variant="danger" className="w-full py-4 rounded-2xl" onClick={updateTicker} loading={isProcessing}>Update Home Ticker</Button>
+
+                     <div className="bg-rose-50 p-6 rounded-[32px] border border-rose-100">
+                       <p className="text-[10px] font-black text-rose-700 uppercase mb-2">System Reset</p>
+                       <p className="text-[9px] text-rose-600 mb-4 leading-relaxed uppercase font-bold">সম্পূর্ণ ডাটাবেস রিসেট করে ডিফল্ট লিস্ট লোড করতে নিচের বাটনটি ব্যবহার করুন। এটি বর্তমানে থাকা সকল ম্যানুয়াল ডাটা মুছে ফেলবে।</p>
+                       <Button variant="danger" className="w-full py-4 rounded-2xl shadow-lg shadow-rose-500/10" onClick={seedDatabase} loading={isProcessing}>
+                         Clear & Reset Database (Default)
+                       </Button>
+                     </div>
+
+                     <div className="space-y-3">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Ticker Message</p>
+                       <textarea value={tickerMessage} onChange={(e) => setTickerMessage(e.target.value)} className="w-full bg-white border-2 p-5 rounded-[40px] text-xs h-32 outline-none focus:border-blue-500 transition-all font-medium leading-relaxed" />
+                       <Button variant="primary" className="w-full py-4 rounded-2xl" onClick={updateTicker} loading={isProcessing}>Update Home Ticker</Button>
+                     </div>
                   </div>
                 )}
               </div>
@@ -2471,6 +2498,13 @@ export default function App() {
                     <span className="text-xl">📅</span> সিরিয়াল দিন
                   </button>
                 </div>
+
+                <button 
+                  onClick={() => window.open(`https://wa.me/8801518395772?text=Hello, I want to know more about doctor ${selectedDoctor.name}`, '_blank')}
+                  className="w-full mt-4 bg-blue-50 hover:bg-blue-100 text-blue-600 py-4 rounded-2xl font-black border-2 border-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-[10px]"
+                >
+                  <span className="text-lg">💬</span> ডাক্তার সম্পর্কিত জানতে whatsapp এ যোগাযোগ করুন
+                </button>
               </div>
             </motion.div>
           </div>
