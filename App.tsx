@@ -761,6 +761,7 @@ export default function App() {
 
   // Search States
   const [searchTerm, setSearchTerm] = useState('');
+  const [doctorSearchTerm, setDoctorSearchTerm] = useState('');
   const [adminSearchTerm, setAdminSearchTerm] = useState('');
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
 
@@ -1425,6 +1426,11 @@ export default function App() {
       });
     }
 
+    if (doctorSearchTerm.trim()) {
+      const search = doctorSearchTerm.toLowerCase().trim();
+      list = list.filter(d => d.name.toLowerCase().includes(search));
+    }
+
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase().trim();
       list = list.filter(d => {
@@ -1452,7 +1458,7 @@ export default function App() {
     });
 
     return Array.from(uniqueMap.values());
-  }, [searchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors, hospitals]);
+  }, [searchTerm, doctorSearchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors, hospitals]);
 
   const filteredLabTests = useMemo(() => {
     return labTests.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -1764,24 +1770,36 @@ export default function App() {
                         <div className="absolute top-0 right-0 h-14 w-12 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity"></div>
                     </div>
 
-                    {/* Day Filter Bar */}
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-1">
-                      <button
-                        onClick={() => setSelectedDay(null)}
-                        className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-500 border border-slate-100'}`}
-                      >
-                        All
-                      </button>
-                      {['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'].map(day => (
+                      {/* Day Filter Bar */}
+                      <div className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-1">
                         <button
-                          key={day}
-                          onClick={() => setSelectedDay(selectedDay === day ? null : day)}
-                          className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black transition-all ${selectedDay === day ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-500 border border-slate-100'}`}
+                          onClick={() => setSelectedDay(null)}
+                          className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black transition-all ${selectedDay === null ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-500 border border-slate-100'}`}
                         >
-                          {day}
+                          All
                         </button>
-                      ))}
-                    </div>
+                        {['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'].map(day => (
+                          <button
+                            key={day}
+                            onClick={() => setSelectedDay(selectedDay === day ? null : day)}
+                            className={`whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black transition-all ${selectedDay === day ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-500 border border-slate-100'}`}
+                          >
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Targeted Doctor Search */}
+                      <div className="relative px-1">
+                        <input 
+                          type="text" 
+                          placeholder="নির্দিষ্ট ডাক্তারের নাম দিয়ে খুঁজুন..." 
+                          value={doctorSearchTerm} 
+                          onChange={(e) => setDoctorSearchTerm(e.target.value)} 
+                          className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 text-xs font-bold outline-none shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 transition-all" 
+                        />
+                        <span className="absolute right-5 top-4 text-slate-300 text-sm italic pr-1">🔍</span>
+                      </div>
 
                     <div className="space-y-4 pb-36">
                        {filteredDoctors.length > 0 ? filteredDoctors.map(d => {
