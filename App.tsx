@@ -1352,107 +1352,106 @@ export default function App() {
   };
 
   const filteredDoctors = useMemo(() => {
-    let list = doctors.map(d => {
-      // Dynamic availability check for "availableToday"
-      const bnDayNames = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
-      const todayBn = bnDayNames[new Date().getDay()];
-      
-      const checkDay = (docSchedule: string, day: string) => {
-        const sched = docSchedule.replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '');
-        if (sched.includes('প্রতিদিন')) {
-          if (sched.includes('শুক্রবন্ধ') && day === 'শুক্রবার') return false;
-          return true;
-        }
-        
-        const dayAlias: Record<string, string[]> = {
-          'শনিবার': ['শনি'],
-          'রবিবার': ['রবি'],
-          'সোমবার': ['সোম'],
-          'মঙ্গলবার': ['মঙ্গল'],
-          'বুধবার': ['বুধ'],
-          'বৃহস্পতিবার': ['বৃহস্পতি'],
-          'শুক্রবার': ['শুক্র']
-        };
-
-        const aliases = dayAlias[day];
-        if (!aliases) return false;
-        const searchDay = aliases[0];
-
-        if (sched.includes(searchDay)) return true;
-
-        const parts = sched.split(':')[0].split('-');
-        if (parts.length === 2) {
-          const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
-          const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
-          const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
-          const currentIdx = dayOrderList.indexOf(searchDay);
-          
-          if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
-            if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
-            return currentIdx >= startIdx || currentIdx <= endIdx;
-          }
-        }
-        return false;
-      };
-
-      return {
-        ...d,
-        availableToday: checkDay(d.schedule, todayBn)
-      };
-    });
-
-    if (selectedHospitalId) {
-      list = list.filter(d => (d.clinics || []).includes(selectedHospitalId));
-    }
-    if (selectedSpecialty) list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
+    // 1. Availability Logic (Common helpers)
+    const bnDayNames = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+    const todayBn = bnDayNames[new Date().getDay()];
     
-    if (selectedDay) {
-      list = list.filter(d => {
-        const dayAlias: Record<string, string[]> = {
-          'শনিবার': ['শনি'],
-          'রবিবার': ['রবি'],
-          'সোমবার': ['সোম'],
-          'মঙ্গলবার': ['মঙ্গল'],
-          'বুধবার': ['বুধ'],
-          'বৃহস্পতিবার': ['বৃহস্পতি'],
-          'শুক্রবার': ['শুক্র']
-        };
-        const sched = d.schedule.replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '');
-        const aliasArr = dayAlias[selectedDay];
-        if (!aliasArr) return false;
-        const searchDay = aliasArr[0];
+    const checkDay = (docSchedule: string, day: string) => {
+      const sched = (docSchedule || '').replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '').toLowerCase();
+      const searchDay = day.toLowerCase();
+      
+      if (sched.includes('প্রতিদিন') || sched.includes('সবদিন')) {
+        if (sched.includes('শুক্রবন্ধ') && (searchDay.includes('শুক্র') || searchDay === 'শুক্রবার')) return false;
+        return true;
+      }
+      
+      const dayAlias: Record<string, string[]> = {
+        'শনি': ['শনি', 'শনিবার'],
+        'রবি': ['রবি', 'রবিবার'],
+        'সোম': ['সোম', 'সোমবার'],
+        'মঙ্গল': ['মঙ্গল', 'মঙ্গলবার'],
+        'বুধ': ['বুধ', 'বুধবার'],
+        'বৃহস্পতি': ['বৃহস্পতি', 'বৃহস্পতিবার'],
+        'শুক্র': ['শুক্র', 'শুক্রবার']
+      };
 
-        if (sched.includes('প্রতিদিন')) {
-          if (sched.includes('শুক্রবন্ধ') && selectedDay === 'শুক্রবার') return false;
-          return true;
-        }
-        if (sched.includes(searchDay)) return true;
-
-        const parts = sched.split(':')[0].split('-');
-        if (parts.length === 2) {
-          const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
-          const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
-          const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
-          const currentIdx = dayOrderList.indexOf(searchDay);
-          
-          if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
-            if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
-            return currentIdx >= startIdx || currentIdx <= endIdx;
-          }
+      const match = Object.entries(dayAlias).some(([short, fulls]) => {
+        if (searchDay.includes(short)) {
+           return sched.includes(short);
         }
         return false;
       });
+      
+      if (match) return true;
+
+      const parts = sched.split(':')[0].split('-');
+      if (parts.length === 2) {
+        const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+        const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
+        const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
+        
+        let currentIdx = -1;
+        dayOrderList.forEach((dName, idx) => {
+          if (searchDay.includes(dName)) currentIdx = idx;
+        });
+        
+        if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
+          if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
+          return currentIdx >= startIdx || currentIdx <= endIdx;
+        }
+      }
+      return false;
+    };
+
+    // Prepare initial list with availability
+    let list = doctors.map(d => ({
+      ...d,
+      availableToday: checkDay(d.schedule, todayBn)
+    }));
+
+    // Apply strict filters
+    if (selectedHospitalId) {
+      list = list.filter(d => (d.clinics || []).includes(selectedHospitalId));
+    }
+    
+    if (selectedSpecialty) {
+      list = list.filter(d => d.specialty.toLowerCase() === selectedSpecialty.toLowerCase());
+    }
+    
+    if (selectedDay) {
+      list = list.filter(d => {
+        if (selectedDay === 'আজ') return d.availableToday;
+        return checkDay(d.schedule, selectedDay);
+      });
     }
 
-    return list.filter(d => {
-      const search = searchTerm.toLowerCase();
-      const docName = d.name.toLowerCase();
-      const docSpecialty = d.specialty.toLowerCase();
-      const docClinics = d.clinics || [];
-      const hospitalMatch = hospitals.some(h => docClinics.includes(h.id) && h.name.toLowerCase().includes(search));
-      
-      return docName.includes(search) || docSpecialty.includes(search) || hospitalMatch;
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase().trim();
+      list = list.filter(d => {
+        const docName = d.name.toLowerCase();
+        const docSpecialty = d.specialty.toLowerCase();
+        const docDegree = (d.degree || '').toLowerCase();
+        const docClinics = d.clinics || [];
+        const hospitalMatch = hospitals.some(h => docClinics.includes(h.id) && h.name.toLowerCase().includes(search));
+        
+        return docName.includes(search) || docSpecialty.includes(search) || docDegree.includes(search) || hospitalMatch;
+      });
+    }
+
+    // Deduplicate by Name + Degree to fix data consistency issues
+    const uniqueMap = new Map();
+    list.forEach(d => {
+      const key = `${d.name}-${d.degree}`.toLowerCase().trim();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, d);
+      } else {
+        const existing = uniqueMap.get(key);
+        // Merge clinics if duplicate entry found
+        existing.clinics = Array.from(new Set([...(existing.clinics || []), ...(d.clinics || [])]));
+      }
     });
+
+    return Array.from(uniqueMap.values());
   }, [searchTerm, selectedHospitalId, selectedSpecialty, selectedDay, doctors, hospitals]);
 
   const filteredLabTests = useMemo(() => {
@@ -1786,7 +1785,10 @@ export default function App() {
 
                     <div className="space-y-4 pb-36">
                        {filteredDoctors.length > 0 ? filteredDoctors.map(d => {
-                         const hospital = hospitals.find(h => h.id === d.clinics[0]);
+                         const currentHospital = selectedHospitalId 
+                            ? hospitals.find(h => h.id === selectedHospitalId)
+                            : hospitals.find(h => d.clinics?.includes(h.id));
+                         
                          return (
                            <Card 
                             key={d.id} 
@@ -1803,7 +1805,8 @@ export default function App() {
                                <div className="flex flex-col gap-0.5 mt-1">
                                  <p className="text-[9px] text-slate-400 font-bold leading-snug italic">{d.degree}</p>
                                  <p className="text-[10px] text-slate-500 font-black flex items-center gap-1 mt-0.5">
-                                   <span className="opacity-80">📍</span> {hospital?.name || 'চেম্বার'}
+                                   <span className="opacity-80">📍</span> {currentHospital?.name || 'চেম্বার'}
+                                    {(d.clinics?.length || 0) > 1 && !selectedHospitalId && <span className="ml-1 opacity-60 text-[8px]">(+{d.clinics.length - 1} আরও)</span>}
                                  </p>
                                </div>
                                <div className="mt-3 pt-3 border-t border-slate-50 space-y-4">
@@ -1843,7 +1846,7 @@ export default function App() {
                {homeSubCategory === 'hospitals' && (
                  <div className="space-y-4 pb-36">
                     {hospitals.filter(h => doctors.some(d => (d.clinics || []).includes(h.id))).map(c => (
-                      <Card key={c.id} className="p-0 overflow-hidden relative cursor-pointer group" onClick={() => { setSelectedHospitalId(c.id); setHomeSubCategory('doctors'); }}>
+                      <Card key={c.id} className="p-0 overflow-hidden relative cursor-pointer group" onClick={() => { setSelectedHospitalId(c.id); setHomeSubCategory('doctors'); setSearchTerm(''); }}>
                          <img src={c.image} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500" />
                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-6 text-white">
                             <h4 className="font-black text-base uppercase tracking-tight">{c.name}</h4>
@@ -2231,7 +2234,7 @@ export default function App() {
                   degree: rawData.degree,
                   specialty: rawData.specialty,
                   districts: [rawData.district],
-                  clinics: [rawData.clinic],
+                  clinics: (rawData.clinic || '').split(',').map((s: any) => s.trim()).filter(Boolean),
                   schedule: rawData.schedule,
                   image: tempImage || editingItem?.image || `https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200&sig=${id}`,
                   availableToday: true,
@@ -2280,7 +2283,7 @@ export default function App() {
                   <Input label="Degree" name="degree" defaultValue={editingItem?.degree} required />
                   <Input label="Specialty" name="specialty" defaultValue={editingItem?.specialty} required />
                   <Input label="District" name="district" defaultValue={editingItem?.districts?.[0]} required />
-                  <Input label="Clinic ID" name="clinic" defaultValue={editingItem?.clinics?.[0]} required />
+                  <Input label="Clinic IDs (comma-separated)" name="clinic" defaultValue={editingItem?.clinics?.join(', ')} required />
                   <Input label="Schedule" name="schedule" defaultValue={editingItem?.schedule} required />
                 </>
               )}
