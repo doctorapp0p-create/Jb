@@ -30,6 +30,7 @@ export interface Doctor {
   availableToday: boolean;
   rating: number;
   image: string;
+  slug?: string;
   isVideoConsultant?: boolean;
   consultationFee?: number;
 }
@@ -41,6 +42,7 @@ export interface Clinic {
   address: string;
   doctors: string[];
   image: string;
+  slug?: string;
 }
 
 export interface Medicine {

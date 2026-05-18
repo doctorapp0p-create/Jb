@@ -1,8 +1,11 @@
 {
-  "name": "JB Healthcare - Your Digital Doctor",
-  "description": "A comprehensive healthcare platform offering video consultations, medicine delivery, home lab tests, and hospital directory.",
+  "name": "Nilpha",
+  "description": "Nilpha - Doctor Directory, Appointment Booking, Telemedicine Platform, Diagnostic Services, and Medicine Delivery in Bangladesh.",
   "requestFramePermissions": [
     "camera",
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
