@@ -30,7 +30,20 @@ const SEO: React.FC<SEOProps> = ({
   const fullOgUrl = ogUrl ? `${siteUrl}${ogUrl}` : fullCanonical;
   
   // Default values for missing fields
-  const defaultKeywords = ['Nilpha', 'Nilpha.com', 'Doctor Appointment', 'Nilphamari Doctors', 'Telemedicine Bangladesh', 'ডাক্তার অ্যাপয়েন্টমেন্ট', 'নীলফামারী ডাক্তার'];
+  const defaultKeywords = [
+    'Nilpha', 
+    'Nilpha.com', 
+    'Doctor Appointment', 
+    'Nilphamari Doctors', 
+    'Telemedicine Bangladesh', 
+    'ডাক্তার অ্যাপয়েন্টমেন্ট', 
+    'নীলফামারী ডাক্তার',
+    'ডক্টর কুটুম নীলফামারী',
+    'Doctor Kutum Nilphamari',
+    'Best Doctor in Nilphamari',
+    'নীলফামারীর সেরা ডাক্তার',
+    'JB Healthcare Nilphamari'
+  ];
   const allKeywords = [...new Set([...keywords, ...defaultKeywords])].join(', ');
 
   return (

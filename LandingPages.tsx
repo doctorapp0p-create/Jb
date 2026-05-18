@@ -11,6 +11,31 @@ const HOTLINE = "01846800973";
 
 // --- Components ---
 
+export const SEOFooter: React.FC = () => (
+    <footer className="mt-20 border-t border-slate-100 bg-white p-12 text-center space-y-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
+          <Link to="/districts/nilphamari" className="hover:text-blue-600 transition-colors">Nilphamari Doctors</Link>
+          <Link to="/specialists/medicine" className="hover:text-blue-600 transition-colors">Medicine</Link>
+          <Link to="/specialists/gynecology" className="hover:text-blue-600 transition-colors">Gynecology</Link>
+          <Link to="/specialists/cardiology" className="hover:text-blue-600 transition-colors">Cardiology</Link>
+          <Link to="/specialists/pediatrics" className="hover:text-blue-600 transition-colors">Pediatrics</Link>
+        </div>
+        <div className="h-px bg-slate-50 w-20 mx-auto" />
+        <p className="text-[10px] text-slate-300 font-bold uppercase tracking-[0.2em] leading-relaxed">
+          Nilpha.com - Nilphamari's Trusted Medical Directory <br/>
+          নীলফামারীর বিশ্বস্ত ডক্টর ডিরেক্টরি ও অনলাইন সিরিয়াল সার্ভিস।
+        </p>
+        <div className="flex justify-center gap-4 opacity-20">
+           <Heart size={16} className="text-red-500" />
+           <ShieldCheck size={16} className="text-blue-600" />
+           <MessageSquare size={16} className="text-emerald-500" />
+        </div>
+      </div>
+    </footer>
+);
+
 export const Breadcrumbs: React.FC<{ items: { label: string, link?: string }[] }> = ({ items }) => (
   <nav className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 py-4 px-6 overflow-x-auto no-scrollbar whitespace-nowrap">
     <Link to="/" className="hover:text-blue-600 flex items-center gap-1.5"><Home size={10} /> Home</Link>
@@ -125,7 +150,21 @@ export const DoctorProfilePage: React.FC = () => {
       <SEO 
         title={`${doctor.name} | ${doctor.specialty} in ${doctor.districts[0]} | Nilpha`}
         description={`Book an appointment with ${doctor.name}, a leading ${doctor.specialty} in ${clinic?.name || 'Nilphamari'}, ${doctor.districts[0]}. Find doctor profile, chamber address, visiting hours, and consultation fee. | নীলফামারীতে ${specialty?.bnName || doctor.specialty} বিশেষজ্ঞ ${doctor.name}-এর চেম্বারের ঠিকানা, সিরিয়াল ও অ্যাপয়েন্টমেন্ট তথ্য। বিস্তারিত জানুন Nilpha.com-এ।`}
-        keywords={[doctor.name, doctor.specialty, clinic?.name || '', 'Nilphamari Doctor', 'নীলফামারীর ডাক্তার', 'Best Doctor in Nilphamari', specialty?.bnName || '']}
+        keywords={[
+          doctor.name, 
+          doctor.specialty, 
+          clinic?.name || '', 
+          'Nilphamari Doctor', 
+          'নীলফামারীর ডাক্তার', 
+          'Best Doctor in Nilphamari', 
+          specialty?.bnName || '',
+          'নীলফামারী ডাক্তার লিস্ট',
+          'ডক্টর কুটুম নীলফামারী',
+          'Doctor Kutum',
+          'Nilphamari Medical Directory',
+          'সিরিয়াল কন্টাক্ট',
+          'Doctor Appoinment Nilphamari'
+        ]}
         ogImage={doctor.image}
         ogUrl={`/doctors/${doctorSlug}`}
         ogType="profile"
@@ -301,6 +340,7 @@ export const DoctorProfilePage: React.FC = () => {
            </div>
         </section>
       </div>
+      <SEOFooter />
     </div>
   );
 };
@@ -335,8 +375,17 @@ export const ClinicLandingPage: React.FC = () => {
     <div className="bg-slate-50 min-h-screen pb-20">
       <SEO 
         title={`${clinic.name} | Doctors List & Location, ${clinic.district} | Nilpha`}
-        description={`Find doctors in ${clinic.name}, ${clinic.address}. View visiting hours, departments, and book appointments online on Nilpha.com. ${clinic.name}-এর ডাক্তারদের তালিকা ও সিরিয়াল নম্বর দেখুন।`}
-        keywords={[clinic.name, clinic.district + ' Hospital', 'Doctors in ' + clinic.name, 'নীলফামারী ক্লিনিক']}
+        description={`Find doctors in ${clinic.name}, ${clinic.address}. View visiting hours, departments, and book appointments online on Nilpha.com. ${clinic.name}-এর ডাক্তারদের তালিকা ও সিরিয়াল নম্বর দেখুন। নীলফামারীর উন্নত চিকিৎসাসেবা ও বিশেষজ্ঞ ডাক্তারদের তথ্য।`}
+        keywords={[
+          clinic.name, 
+          clinic.district + ' Hospital', 
+          'Doctors in ' + clinic.name, 
+          'নীলফামারী ক্লিনিক',
+          'ডক্টর কুটুম',
+          'Nilpha Hospitals',
+          'Nilphamari Clinic List',
+          'নীলফামারী হাসপাতালের তালিকা'
+        ]}
         ogImage={clinic.image}
         ogUrl={`/hospitals/${clinicSlug}`}
         canonical={`/hospitals/${clinicSlug}`}
@@ -391,6 +440,7 @@ export const ClinicLandingPage: React.FC = () => {
            </div>
         </section>
       </div>
+      <SEOFooter />
     </div>
   );
 };
@@ -407,7 +457,14 @@ export const SpecialistLandingPage: React.FC = () => {
             <SEO 
                 title={`Best ${specialtyName} Doctors in Nilphamari | Specialist List | Nilpha`}
                 description={`Find the best ${specialtyName} doctors in Nilphamari. View doctor profile, degrees, chamber address and book appointments online on Nilpha.com. নীলফামারী জেলার সেরা ${specialtyData?.bnName || specialtyName} বিশেষজ্ঞদের তালিকা এখানে পাবেন।`}
-                keywords={[specialtyName + ' in Nilphamari', specialtyName + ' doctor list', 'নীলফামারী ' + (specialtyData?.bnName || '') + ' বিশেষজ্ঞ']}
+                keywords={[
+                   specialtyName + ' in Nilphamari', 
+                   specialtyName + ' doctor list', 
+                   'নীলফামারী ' + (specialtyData?.bnName || '') + ' বিশেষজ্ঞ',
+                   'Nilphamari Specialist Doctors',
+                   'ডক্টর কুটুম নীলফামারী',
+                   'নীলফামারী ডাক্তার লিস্ট'
+                ]}
                 ogUrl={`/specialists/${slug}`}
                 canonical={`/specialists/${slug}`}
             />
@@ -450,6 +507,7 @@ export const SpecialistLandingPage: React.FC = () => {
                    )}
                 </div>
             </div>
+            <SEOFooter />
         </div>
     );
 };
@@ -483,6 +541,7 @@ export const DistrictLandingPage: React.FC = () => {
                    ))}
                 </div>
             </div>
+            <SEOFooter />
         </div>
     )
 }

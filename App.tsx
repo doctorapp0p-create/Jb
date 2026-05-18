@@ -1590,9 +1590,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none overflow-x-hidden">
       <SEO 
-        title="Nilpha | Best Doctor Directory & Appointment Booking in Nilphamari"
-        description="Book appointments with top specialists in Nilphamari through Nilpha. Find doctors, hospitals, diagnostic centers, and get medicine delivery."
-        keywords={['Nilpha', 'Nilphamari Doctor', 'Doctor Appointment', 'Bangladesh Healthcare']}
+        title="Nilpha | নীলফামারীর সেরা ডাক্তারদের তালিকা ও অ্যাপয়েন্টমেন্ট - Nilphamari's #1 Medical Directory"
+        description="নীলফামারী জেলার বিশেষজ্ঞ ডাক্তারদের তালিকা, চেম্বারের ঠিকানা ও সিরিয়াল নিশ্চিত করতে Nilpha.com-এ ভিজিট করুন। ডক্টর কুটুম নীলফামারী সহ সকল হাসপাতালের ডাক্তারদের তথ্য এখানে পাবেন।"
+        keywords={['Nilpha', 'Nilphamari Doctor', 'Doctor Appointment', 'নীলফামারী ডাক্তার', 'ডক্টর কুটুম', 'ডাক্তার অ্যাপয়েন্টমেন্ট', 'Nilphamari Medical Directory', 'Nilpha.com']}
       />
 
       <Routes>
