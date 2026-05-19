@@ -32,6 +32,7 @@ import {
 import { Routes, Route, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import SEO from './SEO';
 import { DoctorProfilePage, ClinicLandingPage, SpecialistLandingPage, DistrictLandingPage } from './LandingPages';
+import { BookingModal } from './src/components/BookingModal';
 import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1595,6 +1596,14 @@ export default function App() {
         keywords={['Nilpha', 'Nilphamari Doctor', 'Doctor Appointment', 'নীলফামারী ডাক্তার', 'ডক্টর কুটুম', 'ডাক্তার অ্যাপয়েন্টমেন্ট', 'Nilphamari Medical Directory', 'Nilpha.com']}
       />
 
+      <BookingModal 
+        isOpen={!!bookingDoctor} 
+        onClose={() => setBookingDoctor(null)} 
+        doctorName={bookingDoctor?.name || ''} 
+        doctorSpecialty={bookingDoctor?.specialty || ''} 
+        hotline={HOTLINE_CONTACT} 
+      />
+
       <Routes>
         {/* Dynamic Landing Pages */}
         <Route path="/doctors/:slug" element={<DoctorProfilePage />} />
@@ -1708,6 +1717,7 @@ export default function App() {
                               setSelectedHospitalId(null); 
                               setSearchTerm(''); 
                               setSelectedSpecialty(null);
+                              setSelectedDay(null);
                             }}
                             className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${homeSubCategory === cat.id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-slate-400 border border-slate-50'}`}
                           >
@@ -1744,6 +1754,27 @@ export default function App() {
 
                        {homeSubCategory === 'doctors' && (
                          <div className="space-y-6">
+                            {/* Day Filter Bar */}
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                                {[
+                                  { id: 'শনিবার', label: 'শনিবার' },
+                                  { id: 'রবিবার', label: 'রবিবার' },
+                                  { id: 'সোমবার', label: 'সোমবার' },
+                                  { id: 'মঙ্গলবার', label: 'মঙ্গলবার' },
+                                  { id: 'বুধবার', label: 'বুধবার' },
+                                  { id: 'বৃহস্পতিবার', label: 'বৃহস্পতিবার' },
+                                  { id: 'শুক্রবার', label: 'শুক্রবার' },
+                                ].map(day => (
+                                  <button
+                                    key={day.id}
+                                    onClick={() => setSelectedDay(selectedDay === day.id ? null : day.id)}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-tight whitespace-nowrap transition-all border-2 ${selectedDay === day.id ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-50'}`}
+                                  >
+                                    {day.label}
+                                  </button>
+                                ))}
+                            </div>
+
                             {/* Specialty Bar */}
                             <div className="relative w-full group">
                                 <div 
@@ -1779,14 +1810,52 @@ export default function App() {
                                  <Card 
                                   key={d.id} 
                                   onClick={() => navigate(`/doctors/${slugify(d.name)}`)}
-                                  className="flex gap-4 items-center border-l-4 border-l-blue-600 hover:border-l-8 hover:shadow-lg transition-all cursor-pointer group"
+                                  className="flex items-start gap-4 border-l-4 border-l-blue-600 hover:border-l-8 hover:shadow-lg transition-all cursor-pointer group relative p-5"
                                  >
-                                   <img src={d.image} className="w-20 h-20 rounded-3xl object-cover border bg-slate-50 shadow-sm" alt={d.name} />
-                                   <div className="flex-1">
-                                      <h4 className="font-black text-[14px] text-slate-800 leading-tight group-hover:text-blue-600">{d.name}</h4>
-                                      <p className="text-[10px] text-blue-600 font-black uppercase mt-1">{d.specialty}</p>
-                                      <p className="text-[9px] text-slate-400 font-bold leading-snug mt-1">{d.degree}</p>
+                                   <img src={d.image} className="w-20 h-24 rounded-2xl object-cover border bg-slate-50 shadow-sm" alt={d.name} />
+                                   <div className="flex-1 space-y-1">
+                                      <h4 className="font-black text-[15px] text-slate-800 leading-tight group-hover:text-blue-600 transition-colors">{d.name}</h4>
+                                      <p className="text-[10px] text-blue-600 font-black uppercase tracking-wider">{d.specialty}</p>
+                                      <p className="text-[9px] text-slate-400 font-bold leading-tight line-clamp-2 italic">{d.degree}</p>
+                                      
+                                      <div className="pt-2 border-t border-slate-50 mt-2 space-y-1.5">
+                                         <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 uppercase">
+                                            <MapPin size={10} className="text-blue-500" />
+                                            {CLINICS.find(c => c.id === d.clinics[0])?.name || 'চেম্বার'}
+                                         </div>
+                                         <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-500 uppercase">
+                                            <Clock size={10} />
+                                            {d.schedule}
+                                         </div>
+                                      </div>
                                    </div>
+                                   <div className="flex flex-col gap-2 shrink-0">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setBookingDoctor(d);
+                                          setShowSerialModal(true);
+                                        }}
+                                        className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight shadow-md shadow-emerald-100 flex items-center gap-1.5 hover:bg-emerald-700 active:scale-95 transition-all"
+                                      >
+                                        <MessageSquare size={10} /> সিরিয়াল দিন
+                                      </button>
+                                      <a 
+                                        href={`tel:${HOTLINE_CONTACT}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight shadow-md shadow-blue-100 flex items-center gap-1.5 hover:bg-blue-700 active:scale-95 transition-all"
+                                      >
+                                        <Phone size={10} /> কল করুন
+                                      </a>
+                                   </div>
+                                   {d.availableToday && (
+                                     <div className="absolute top-4 right-4">
+                                        <span className="flex h-2 w-2 relative">
+                                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                        </span>
+                                      </div>
+                                   )}
                                  </Card>
                                ))}
                             </div>
@@ -1796,11 +1865,27 @@ export default function App() {
                        {homeSubCategory === 'hospitals' && (
                          <div className="space-y-4">
                             {hospitals.map(c => (
-                              <Card key={c.id} className="p-0 overflow-hidden relative cursor-pointer group" onClick={() => navigate(`/hospitals/${slugify(c.name)}`)}>
+                              <Card key={c.id} className="p-0 overflow-hidden relative cursor-pointer group shadow-lg" onClick={() => { 
+                                setSelectedHospitalId(c.id); 
+                                setHomeSubCategory('doctors'); 
+                                setSearchTerm('');
+                                setSelectedSpecialty(null);
+                                setSelectedDay(null);
+                              }}>
                                  <img src={c.image} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500" alt={c.name} />
                                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-6 text-white">
-                                    <h4 className="font-black text-base uppercase tracking-tight">{c.name}</h4>
-                                    <p className="text-[10px] font-bold uppercase opacity-80 mt-1">{c.address}</p>
+                                    <div className="flex justify-between items-end">
+                                      <div>
+                                        <h4 className="font-black text-base uppercase tracking-tight">{c.name}</h4>
+                                        <p className="text-[10px] font-bold uppercase opacity-80 mt-1">{c.address}</p>
+                                      </div>
+                                      <div className="bg-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
+                                        View Doctors <ArrowRight size={12} />
+                                      </div>
+                                    </div>
+                                 </div>
+                                 <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-white border border-white/20" onClick={(e) => { e.stopPropagation(); navigate(`/hospitals/${slugify(c.name)}`); }}>
+                                   Full Profile
                                  </div>
                               </Card>
                             ))}
@@ -1862,6 +1947,16 @@ export default function App() {
           )
         } />
       </Routes>
+
+      {bookingDoctor && (
+        <BookingModal 
+          isOpen={showSerialModal}
+          onClose={() => setShowSerialModal(false)}
+          doctorName={bookingDoctor.name}
+          doctorSpecialty={bookingDoctor.specialty}
+          hotline={HOTLINE_CONTACT}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { DOCTORS, CLINICS, SPECIALTIES, DISTRICTS } from './constants';
 import SEO from './SEO';
 import { motion } from 'motion/react';
-import { Stethoscope, MapPin, Clock, Phone, Star, ArrowRight, Microscope, ShieldCheck, Heart, User, Home, ChevronRight, MessageSquare, Search } from 'lucide-react';
+import { Stethoscope, MapPin, Clock, Phone, Star, ArrowRight, Microscope, ShieldCheck, Heart, User, Home, ChevronRight, MessageSquare, Search, Calendar } from 'lucide-react';
 import { slugify } from './utils';
+import { BookingModal } from './src/components/BookingModal';
 
 const HOTLINE = "01846800973";
 
@@ -55,6 +56,7 @@ export const Breadcrumbs: React.FC<{ items: { label: string, link?: string }[] }
 // --- Doctor Profile Page ---
 export const DoctorProfilePage: React.FC = () => {
   const { slug } = useParams();
+  const [showBookingModal, setShowBookingModal] = React.useState(false);
   const doctor = DOCTORS.find(d => slugify(d.name) === slug || d.id === slug);
 
   if (!doctor) return <div className="p-20 text-center font-black uppercase text-slate-400">Doctor Not Found</div>;
@@ -185,10 +187,18 @@ export const DoctorProfilePage: React.FC = () => {
             <img src={doctor.image} alt={`${doctor.name} - ${doctor.specialty} Specialist`} className="w-32 h-32 rounded-[48px] object-cover relative border-4 border-white shadow-xl" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{doctor.name} | {doctor.specialty} in {doctor.districts[0]}</h1>
-            <p className="text-blue-600 font-black text-[10px] uppercase tracking-widest mt-1">{doctor.specialty} Specialist</p>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{doctor.name}</h1>
+            <p className="text-blue-600 font-black text-[10px] uppercase tracking-widest mt-1 italic">{doctor.specialty} Specialist</p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+               <div className="bg-slate-100 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-600 uppercase flex items-center gap-1.5">
+                  <MapPin size={12} className="text-blue-500" /> {clinic?.name || 'চেম্বার'}
+               </div>
+               <div className="bg-rose-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-rose-600 uppercase flex items-center gap-1.5">
+                  <Clock size={12} /> {doctor.schedule}
+               </div>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">{doctor.degree}</p>
+          <p className="text-[11px] text-slate-500 font-bold leading-relaxed italic max-w-sm">{doctor.degree}</p>
           <div className="flex gap-4 pt-2">
             <div className="flex items-center gap-1.5 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tight">
               <Star size={12} fill="currentColor" /> {doctor.rating} Rating
@@ -231,6 +241,23 @@ export const DoctorProfilePage: React.FC = () => {
 
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 space-y-6">
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+             <Calendar size={18} className="text-blue-600" /> পরিদর্শনের দিনসমূহ (Visiting Days)
+          </h2>
+          <div className="flex flex-wrap gap-2">
+             {['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'].map(day => {
+               const dayShort = day === 'শনিবার' ? 'Sat' : day === 'রবিবার' ? 'Sun' : day === 'সোমবার' ? 'Mon' : day === 'মঙ্গলবার' ? 'Tue' : day === 'বুধবার' ? 'Wed' : day === 'বৃহস্পতিবার' ? 'Thu' : 'Fri';
+               const isAvailable = doctor.schedule.includes(dayShort);
+               return (
+                  <div key={day} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight border-2 transition-all ${isAvailable ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' : 'bg-slate-50 text-slate-300 border-slate-50 opacity-50'}`}>
+                     {day}
+                  </div>
+               );
+             })}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 space-y-6">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
              <User size={18} className="text-blue-600" /> Medical Qualification of {doctor.name}
           </h2>
           <div className="p-5 bg-slate-50 rounded-[32px] border border-slate-100">
@@ -251,10 +278,21 @@ export const DoctorProfilePage: React.FC = () => {
           <a href={`tel:${HOTLINE}`} className="block bg-white text-blue-600 p-5 rounded-3xl text-center font-black text-lg tracking-widest active:scale-95 transition-all shadow-lg">
             {HOTLINE}
           </a>
-          <button className="w-full bg-blue-700 text-white p-5 rounded-3xl text-center font-black text-[10px] uppercase tracking-widest border border-white/10 active:scale-95 transition-all">
-             বুক অ্যাপয়েন্টমেন্ট অনলাইন
+          <button 
+            onClick={() => setShowBookingModal(true)}
+            className="w-full bg-emerald-600 text-white p-5 rounded-3xl text-center font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+             <MessageSquare size={18} /> অনলাইনে সিরিয়াল দিন
           </button>
         </section>
+
+        <BookingModal 
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          doctorName={doctor.name}
+          doctorSpecialty={doctor.specialty}
+          hotline={HOTLINE}
+        />
         
         {/* FAQs Section */}
         <section className="bg-white rounded-[40px] p-8 shadow-sm border border-slate-100 space-y-6">
@@ -348,6 +386,9 @@ export const DoctorProfilePage: React.FC = () => {
 // --- Clinic / Hospital Landing Page ---
 export const ClinicLandingPage: React.FC = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const [showBookingModal, setShowBookingModal] = React.useState(false);
+  const [selectedDoctor, setSelectedDoctor] = React.useState<any>(null);
   const clinic = CLINICS.find(c => slugify(c.name) === slug || c.id === slug);
 
   if (!clinic) return <div className="p-20 text-center font-black uppercase text-slate-400">Clinic Not Found</div>;
@@ -425,17 +466,37 @@ export const ClinicLandingPage: React.FC = () => {
            
            <div className="grid grid-cols-1 gap-4">
              {hospitalDocs.map(doc => (
-               <Link key={doc.id} to={`/doctors/${slugify(doc.name)}`} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all active:scale-95 group">
-                  <img src={doc.image} className="w-16 h-16 rounded-[24px] object-cover" alt={`${doc.name} - ${doc.specialty}`} />
-                  <div className="flex-1">
-                     <p className="text-sm font-black text-slate-800 leading-tight">{doc.name}</p>
-                     <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest mt-1">{doc.specialty}</p>
-                     <p className="text-[9px] text-slate-400 font-medium mt-1 truncate max-w-40">{doc.degree}</p>
+               <div key={doc.id} onClick={() => navigate(`/doctors/${slugify(doc.name)}`)} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-start gap-4 hover:shadow-md transition-all cursor-pointer group relative">
+                  <img src={doc.image} className="w-20 h-24 rounded-[24px] object-cover border bg-slate-50 shadow-sm" alt={`${doc.name} - ${doc.specialty}`} />
+                  <div className="flex-1 space-y-1">
+                     <p className="text-base font-black text-slate-800 leading-tight group-hover:text-blue-600 transition-colors uppercase tracking-tight">{doc.name}</p>
+                     <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest mt-1 italic">{doc.specialty}</p>
+                     <p className="text-[9px] text-slate-400 font-bold leading-relaxed mt-2 italic line-clamp-3">{doc.degree}</p>
+                     
+                     <div className="pt-3 border-t border-slate-50 mt-3 flex flex-wrap gap-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDoctor(doc);
+                            setShowBookingModal(true);
+                          }}
+                          className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight shadow-sm flex items-center gap-1.5"
+                        >
+                           <MessageSquare size={10} /> সিরিয়াল
+                        </button>
+                        <a 
+                          href={`tel:${HOTLINE}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-tight shadow-sm flex items-center gap-1.5"
+                        >
+                           <Phone size={10} /> কল
+                        </a>
+                     </div>
                   </div>
-                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                     <ChevronRight size={18} />
+                  <div className="absolute top-6 right-6 w-9 h-9 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                     <ChevronRight size={16} />
                   </div>
-               </Link>
+               </div>
              ))}
            </div>
         </section>
@@ -448,6 +509,9 @@ export const ClinicLandingPage: React.FC = () => {
 // --- Specialist / Department Landing Page ---
 export const SpecialistLandingPage: React.FC = () => {
     const { slug } = useParams();
+    const navigate = useNavigate();
+    const [showBookingModal, setShowBookingModal] = React.useState(false);
+    const [selectedDoctor, setSelectedDoctor] = React.useState<any>(null);
     const specialtyData = SPECIALTIES.find(s => slugify(s.name) === slug || s.id === slug);
     const specialtyName = specialtyData ? specialtyData.name : slug;
     const specialtyDocs = DOCTORS.filter(d => d.specialty.toLowerCase() === specialtyName?.toLowerCase());
@@ -484,20 +548,46 @@ export const SpecialistLandingPage: React.FC = () => {
                 </header>
 
                 <div className="grid grid-cols-1 gap-4">
-                   {specialtyDocs.map(doc => (
-                       <Link key={doc.id} to={`/doctors/${slugify(doc.name)}`} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4 active:scale-95 transition-all group">
-                           <img src={doc.image} className="w-16 h-16 rounded-[24px] object-cover" alt={`${doc.name} - ${doc.specialty}`} />
-                           <div className="flex-1">
-                               <p className="text-sm font-black text-slate-800 group-hover:text-blue-600 transition-colors">{doc.name}</p>
-                               <p className="text-[10px] text-slate-400 font-bold mt-1 truncate max-w-xs">{doc.degree}</p>
-                               <div className="flex gap-2 mt-2">
-                                  <div className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase">৳{doc.consultationFee} Fee</div>
-                                  <div className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase">{doc.rating} ★</div>
-                               </div>
-                           </div>
-                           <ChevronRight size={18} className="text-slate-300" />
-                       </Link>
-                   ))}
+                    {specialtyDocs.map(doc => (
+                        <div key={doc.id} onClick={() => navigate(`/doctors/${slugify(doc.name)}`)} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-start gap-4 active:scale-95 transition-all group relative cursor-pointer">
+                            <img src={doc.image} className="w-16 h-16 rounded-[24px] object-cover border bg-slate-50 shadow-sm" alt={`${doc.name} - ${doc.specialty}`} />
+                            <div className="flex-1 space-y-1">
+                                <p className="text-sm font-black text-slate-800 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{doc.name}</p>
+                                <p className="text-[9px] text-slate-400 font-bold leading-tight italic line-clamp-2 mt-1">{doc.degree}</p>
+                                
+                                <div className="pt-3 flex flex-wrap gap-2">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDoctor(doc);
+                                        setShowBookingModal(true);
+                                      }}
+                                      className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase flex items-center gap-1 shadow-sm"
+                                    >
+                                       <MessageSquare size={10} /> সিরিয়াল দিন
+                                    </button>
+                                    <a 
+                                      href={`tel:${HOTLINE}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase flex items-center gap-1 shadow-sm"
+                                    >
+                                       <Phone size={10} /> কল করুন
+                                    </a>
+                                </div>
+                            </div>
+                            <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-colors" />
+                        </div>
+                    ))}
+
+                    {selectedDoctor && (
+                        <BookingModal 
+                          isOpen={showBookingModal}
+                          onClose={() => setShowBookingModal(false)}
+                          doctorName={selectedDoctor.name}
+                          doctorSpecialty={selectedDoctor.specialty}
+                          hotline={HOTLINE}
+                        />
+                    )}
 
                    {specialtyDocs.length === 0 && (
                        <div className="py-20 text-center space-y-4">
@@ -515,6 +605,9 @@ export const SpecialistLandingPage: React.FC = () => {
 // --- Dictionary / District Index Page ---
 export const DistrictLandingPage: React.FC = () => {
     const { slug } = useParams();
+    const navigate = useNavigate();
+    const [showBookingModal, setShowBookingModal] = React.useState(false);
+    const [selectedDoctor, setSelectedDoctor] = React.useState<any>(null);
     const districtDocs = DOCTORS.filter(d => d.districts.some(dist => slugify(dist) === slug || dist.toLowerCase() === slug?.toLowerCase()));
 
     return (
@@ -531,15 +624,45 @@ export const DistrictLandingPage: React.FC = () => {
                 
                 <div className="grid grid-cols-1 gap-4 mt-8">
                    {districtDocs.map(doc => (
-                       <Link key={doc.id} to={`/doctors/${slugify(doc.name)}`} className="bg-white p-4 rounded-3xl border border-slate-100 flex items-center gap-4 text-left shadow-sm hover:shadow-md transition-all active:scale-95">
-                           <img src={doc.image} className="w-12 h-12 rounded-2xl object-cover" alt={`${doc.name} - ${doc.specialty}`} />
-                           <div>
-                               <p className="text-xs font-black text-slate-800">{doc.name}</p>
-                               <p className="text-[9px] text-blue-600 uppercase font-black">{doc.specialty}</p>
+                       <div key={doc.id} onClick={() => navigate(`/doctors/${slugify(doc.name)}`)} className="bg-white p-5 rounded-[32px] border border-slate-100 flex items-start gap-4 text-left shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                           <img src={doc.image} className="w-20 h-24 rounded-[24px] object-cover border bg-slate-50" alt={`${doc.name} - ${doc.specialty}`} />
+                           <div className="flex-1 space-y-1">
+                               <p className="text-sm font-black text-slate-800 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{doc.name}</p>
+                               <p className="text-[10px] text-blue-600 uppercase font-black italic">{doc.specialty}</p>
+                               
+                               <div className="pt-3 flex flex-wrap gap-2">
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setSelectedDoctor(doc);
+                                       setShowBookingModal(true);
+                                     }}
+                                     className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase flex items-center gap-1 shadow-sm"
+                                   >
+                                      <MessageSquare size={10} /> সিরিয়াল
+                                   </button>
+                                   <a 
+                                     href={`tel:${HOTLINE}`}
+                                     onClick={(e) => e.stopPropagation()}
+                                     className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase flex items-center gap-1 shadow-sm"
+                                   >
+                                      <Phone size={10} /> কল
+                                   </a>
+                               </div>
                            </div>
-                       </Link>
+                       </div>
                    ))}
                 </div>
+
+                {selectedDoctor && (
+                    <BookingModal 
+                        isOpen={showBookingModal}
+                        onClose={() => setShowBookingModal(false)}
+                        doctorName={selectedDoctor.name}
+                        doctorSpecialty={selectedDoctor.specialty}
+                        hotline={HOTLINE}
+                    />
+                )}
             </div>
             <SEOFooter />
         </div>
