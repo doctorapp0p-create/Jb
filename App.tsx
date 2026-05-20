@@ -1773,7 +1773,8 @@ export default function App() {
                             {/* Day Filter Bar */}
                             <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                                 {[
-                                  { id: 'শনিবার', label: 'শনিবার' },
+                                  { id: 'all', label: 'All' },
+                                   { id: 'শনিবার', label: 'শনিবার' },
                                   { id: 'রবিবার', label: 'রবিবার' },
                                   { id: 'সোমবার', label: 'সোমবার' },
                                   { id: 'মঙ্গলবার', label: 'মঙ্গলবার' },
@@ -1783,8 +1784,8 @@ export default function App() {
                                 ].map(day => (
                                   <button
                                     key={day.id}
-                                    onClick={() => setSelectedDay(selectedDay === day.id ? null : day.id)}
-                                    className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-tight whitespace-nowrap transition-all border-2 ${selectedDay === day.id ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-50'}`}
+                                    onClick={() => day.id === 'all' ? setSelectedDay(null) : setSelectedDay(selectedDay === day.id ? null : day.id)}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-tight whitespace-nowrap transition-all border-2 ${(day.id === 'all' ? selectedDay === null : selectedDay === day.id) ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-50'}`}
                                   >
                                     {day.label}
                                   </button>
