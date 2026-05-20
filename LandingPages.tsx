@@ -462,6 +462,15 @@ export const ClinicLandingPage: React.FC = () => {
            <div className="flex items-center justify-between px-2">
               <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Available Specialists ({hospitalDocs.length})</h2>
               <div className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black">All Deparments</div>
+              {selectedDoctor && (
+                <BookingModal 
+                  isOpen={showBookingModal}
+                  onClose={() => setShowBookingModal(false)}
+                  doctorName={selectedDoctor.name}
+                  doctorSpecialty={selectedDoctor.specialty}
+                  hotline={HOTLINE}
+                />
+              )}
            </div>
            
            <div className="grid grid-cols-1 gap-4">
