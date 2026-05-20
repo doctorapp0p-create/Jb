@@ -1373,50 +1373,66 @@ export default function App() {
     const todayBn = bnDayNames[new Date().getDay()];
     
     const checkDay = (docSchedule: string, day: string) => {
-      const sched = (docSchedule || '').replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '').toLowerCase();
+      const s = (docSchedule || '').replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '').toLowerCase();
       const searchDay = day.toLowerCase();
-      
-      if (sched.includes('প্রতিদিন') || sched.includes('সবদিন')) {
-        if (sched.includes('শুক্রবন্ধ') && (searchDay.includes('শুক্র') || searchDay === 'শুক্রবার')) return false;
+
+      const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+
+      // Find search day index
+      let searchIdx = -1;
+      dayOrderList.forEach((dName, idx) => {
+        if (searchDay.includes(dName)) {
+          searchIdx = idx;
+        }
+      });
+
+      if (searchIdx === -1) return false;
+
+      const searchShort = dayOrderList[searchIdx];
+      const activeDays = new Set<string>();
+
+      // 1. Check for Daily or Always Open
+      if (s.includes('প্রতিদিন') || s.includes('সবদিন') || s === 'প্রতিদিন' || s === '') {
+        dayOrderList.forEach(d => activeDays.add(d));
+      }
+
+      // 2. Check for Ranges like শনি-বৃহস্পতি or রবি-বুধবার or শনি-বুধ
+      const rangeMatch = s.match(/(শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)-(শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)/);
+      if (rangeMatch) {
+        const startDay = rangeMatch[1];
+        const endDay = rangeMatch[2];
+        const startIdx = dayOrderList.indexOf(startDay);
+        const endIdx = dayOrderList.indexOf(endDay);
+
+        if (startIdx !== -1 && endIdx !== -1) {
+          let idx = startIdx;
+          while (true) {
+            activeDays.add(dayOrderList[idx]);
+            if (idx === endIdx) break;
+            idx = (idx + 1) % 7;
+          }
+        }
+      }
+
+      // 3. Check for individual mentioned days (e.g., রবি, সোম ও বুধ)
+      dayOrderList.forEach(dName => {
+        if (s.includes(dName)) {
+          activeDays.add(dName);
+        }
+      });
+
+      // 4. Handle Friday Closed or other exclusions (e.g. (শুক্রবার বন্ধ) or শুক্র বন্ধ)
+      const isFridayClosed = s.includes('শুক্র') && (s.includes('বন্ধ') || s.includes('অফ') || s.includes('close'));
+      if (isFridayClosed) {
+        activeDays.delete('শুক্র');
+      }
+
+      // 5. If no specific weekdays mapped, defaults to always visible (e.g. "যোগাযোগ করুন")
+      if (activeDays.size === 0) {
         return true;
       }
-      
-      const dayAlias: Record<string, string[]> = {
-        'শনি': ['শনি', 'শনিবার'],
-        'রবি': ['রবি', 'রবিবার'],
-        'সোম': ['সোম', 'সোমবার'],
-        'মঙ্গল': ['মঙ্গল', 'মঙ্গলবার'],
-        'বুধ': ['বুধ', 'বুধবার'],
-        'বৃহস্পতি': ['বৃহস্পতি', 'বৃহস্পতিবার'],
-        'শুক্র': ['শুক্র', 'শুক্রবার']
-      };
 
-      const match = Object.entries(dayAlias).some(([short, fulls]) => {
-        if (searchDay.includes(short)) {
-           return sched.includes(short);
-        }
-        return false;
-      });
-      
-      if (match) return true;
-
-      const parts = sched.split(':')[0].split('-');
-      if (parts.length === 2) {
-        const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
-        const startIdx = dayOrderList.findIndex(dName => parts[0].includes(dName));
-        const endIdx = dayOrderList.findIndex(dName => parts[1].includes(dName));
-        
-        let currentIdx = -1;
-        dayOrderList.forEach((dName, idx) => {
-          if (searchDay.includes(dName)) currentIdx = idx;
-        });
-        
-        if (startIdx !== -1 && endIdx !== -1 && currentIdx !== -1) {
-          if (startIdx <= endIdx) return currentIdx >= startIdx && currentIdx <= endIdx;
-          return currentIdx >= startIdx || currentIdx <= endIdx;
-        }
-      }
-      return false;
+      return activeDays.has(searchShort);
     };
 
     // Prepare initial list with availability
