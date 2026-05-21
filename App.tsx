@@ -33,6 +33,7 @@ import { Routes, Route, Link, useParams, useNavigate, useLocation } from 'react-
 import SEO from './SEO';
 import { DoctorProfilePage, ClinicLandingPage, SpecialistLandingPage, DistrictLandingPage } from './LandingPages';
 import { BookingModal } from './src/components/BookingModal';
+import { SecurityGuard, sanitizeInput } from './src/components/SecurityGuard';
 import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1606,6 +1607,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none overflow-x-hidden">
+      <SecurityGuard />
       <SEO 
         title="Nilpha | নীলফামারীর সেরা ডাক্তারদের তালিকা ও অ্যাপয়েন্টমেন্ট - Nilphamari's #1 Medical Directory"
         description="নীলফামারী জেলার বিশেষজ্ঞ ডাক্তারদের তালিকা, চেম্বারের ঠিকানা ও সিরিয়াল নিশ্চিত করতে Nilpha.com-এ ভিজিট করুন। ডক্টর কুটুম নীলফামারী সহ সকল হাসপাতালের ডাক্তারদের তথ্য এখানে পাবেন।"
@@ -1761,7 +1763,7 @@ export default function App() {
                               type="text" 
                               placeholder="খুঁজুন..." 
                               value={searchTerm} 
-                              onChange={(e) => setSearchTerm(e.target.value)} 
+                              onChange={(e) => setSearchTerm(sanitizeInput(e.target.value))} 
                               className="bg-white border-none rounded-xl py-2 px-3 text-[10px] font-bold outline-none w-36 shadow-sm" 
                             />
                             <span className="absolute right-2 top-2 text-slate-300 text-[10px]">🔍</span>
