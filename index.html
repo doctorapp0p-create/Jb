@@ -37,47 +37,9 @@
       window.process = { env: { API_KEY: "" } };
     </script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #2563eb;
-        }
-        body {
-            font-family: 'Hind Siliguri', sans-serif;
-            background-color: #f8fafc;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
-            /* Prevent bouncing on mobile */
-            overscroll-behavior-y: contain;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .mobile-p-safe {
-            padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
-        }
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-        .animate-marquee {
-            animation: marquee 25s linear infinite;
-        }
-        .animate-marquee:hover {
-            animation-play-state: paused;
-        }
-        /* Mobile specific adjustments */
-        @media (max-width: 640px) {
-            .mobile-p-safe {
-                padding-bottom: 140px;
-            }
-        }
-    </style>
     <!-- <script type="importmap">
 {
   "imports": {
