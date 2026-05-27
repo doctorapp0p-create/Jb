@@ -1,9 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { LAB_TEST_ITEMS, LabTestItem } from '../data/labTestData';
-import { Search, ShoppingCart, Percent, Share2, Trash2, CheckCircle2, RotateCcw, User, Phone, Plus, Minus, Tag, FileText } from 'lucide-react';
+import { Search, ShoppingCart, Percent, Share2, Trash2, CheckCircle2, RotateCcw, User, Phone, Plus, Minus, Tag, FileText, Building } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CLINICS } from '../../constants';
 
-export const AdminLabBillBuilder: React.FC = () => {
+interface AdminLabBillBuilderProps {
+  hospitals?: { id: string; name: string; address?: string }[];
+}
+
+export const AdminLabBillBuilder: React.FC<AdminLabBillBuilderProps> = ({ hospitals }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [basket, setBasket] = useState<LabTestItem[]>([]);
@@ -11,8 +16,13 @@ export const AdminLabBillBuilder: React.FC = () => {
   // Patient details state
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>('');
   const [discountType, setDiscountType] = useState<'percent' | 'taka'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
+
+  const hospitalsList = useMemo(() => {
+    return hospitals && hospitals.length > 0 ? hospitals : CLINICS;
+  }, [hospitals]);
 
   const categories = ['All', 'Haematology & Hormone', 'Ultrasonogram', 'X-Ray'];
 
@@ -40,6 +50,7 @@ export const AdminLabBillBuilder: React.FC = () => {
     setPatientName('');
     setPatientPhone('');
     setDiscountValue(0);
+    setSelectedHospitalId('');
   };
 
   // Convert numbers to Bengali digits
@@ -71,7 +82,9 @@ export const AdminLabBillBuilder: React.FC = () => {
       return;
     }
 
-    let messageHead = `*🏥 এ.আর জেনারেল হসপিটাল (A.R General Hospital)*\n*ল্যাব টেস্ট ও ডায়াগনস্টিক রিপোর্ট এস্টিমেট*\n`;
+    const selectedHospital = hospitalsList.find(h => h.id === selectedHospitalId);
+    const hospitalNameStr = selectedHospital ? selectedHospital.name : 'এ.আর জেনারেল হসপিটাল';
+    let messageHead = `*🏥 ${hospitalNameStr}*\n*ল্যাব টেস্ট ও ডায়াগনস্টিক রিপোর্ট এস্টিমেট*\n`;
     if (patientName.trim()) {
       messageHead += `\n👤 *রোগীর নাম:* ${patientName.trim()}`;
     }
@@ -283,9 +296,31 @@ export const AdminLabBillBuilder: React.FC = () => {
 
               {/* Patient Details Input */}
               <div className="space-y-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-100/80">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">রোগীর সাধারণ তথ্য (ঐচ্ছিক)</h4>
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">রোগী ও সেন্টারের তথ্য (ঐচ্ছিক)</h4>
                 
                 <div className="space-y-2.5">
+                  {/* Clinic/Hospital Name Selector */}
+                  <div className="relative">
+                    <select
+                      value={selectedHospitalId}
+                      onChange={(e) => setSelectedHospitalId(e.target.value)}
+                      className="w-full bg-white border border-slate-150 rounded-xl py-2.5 pl-9 pr-8 text-xs font-bold outline-none focus:border-blue-500 text-slate-800 appearance-none cursor-pointer"
+                    >
+                      <option value="">-- হসপিটাল বা ডায়াগনস্টিক সেন্টার --</option>
+                      {hospitalsList.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Building size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                      </svg>
+                    </div>
+                  </div>
+
                   <div className="relative">
                     <input 
                       type="text" 
@@ -354,6 +389,13 @@ export const AdminLabBillBuilder: React.FC = () => {
 
               {/* Bill Details Calculation Display */}
               <div className="bg-slate-50 border border-slate-100/60 p-5 rounded-[28px] space-y-3 shadow-inner">
+                {selectedHospitalId && (
+                  <div className="flex justify-between items-center text-xs font-bold text-blue-600 animate-in fade-in">
+                    <span>পরীক্ষা সেন্টার</span>
+                    <span className="truncate max-w-[200px] font-black text-right">{hospitalsList.find(h => h.id === selectedHospitalId)?.name}</span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center text-xs font-bold text-slate-500">
                   <span>মোট বিল ফি</span>
                   <span>৳{toBn(subTotal)}</span>

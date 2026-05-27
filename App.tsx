@@ -404,7 +404,7 @@ const AdminDashboard: React.FC<{
 
         {activeSubTab === 'billing' && (
           <div className="animate-in fade-in slide-in-from-right-4">
-            <AdminLabBillBuilder />
+            <AdminLabBillBuilder hospitals={hospitals} />
           </div>
         )}
 
