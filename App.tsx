@@ -35,6 +35,7 @@ import { DoctorProfilePage, ClinicLandingPage, SpecialistLandingPage, DistrictLa
 import { BookingModal } from './src/components/BookingModal';
 import { SecurityGuard, sanitizeInput } from './src/components/SecurityGuard';
 import { AdminLabBillBuilder } from './src/components/AdminLabBillBuilder';
+import { AuthModal } from './src/components/AuthModal';
 import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1985,6 +1986,16 @@ export default function App() {
           hotline={HOTLINE_CONTACT}
         />
       )}
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        onSubmit={handleAuth}
+        onGoogleLogin={handleGoogleLogin}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }
