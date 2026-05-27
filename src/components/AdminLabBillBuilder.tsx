@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LAB_TEST_ITEMS, LabTestItem } from '../data/labTestData';
-import { Search, ShoppingCart, Percent, Share2, Trash2, CheckCircle2, RotateCcw, User, Phone, Plus, Minus, Tag, FileText, Building } from 'lucide-react';
+import { Search, ShoppingCart, Percent, Share2, Trash2, CheckCircle2, RotateCcw, User, Phone, Plus, Minus, Tag, FileText, Building, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CLINICS } from '../../constants';
 
@@ -16,6 +16,7 @@ export const AdminLabBillBuilder: React.FC<AdminLabBillBuilderProps> = ({ hospit
   // Patient details state
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [patientAddress, setPatientAddress] = useState('');
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>('');
   const [discountType, setDiscountType] = useState<'percent' | 'taka'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -49,6 +50,7 @@ export const AdminLabBillBuilder: React.FC<AdminLabBillBuilderProps> = ({ hospit
     setBasket([]);
     setPatientName('');
     setPatientPhone('');
+    setPatientAddress('');
     setDiscountValue(0);
     setSelectedHospitalId('');
   };
@@ -90,6 +92,9 @@ export const AdminLabBillBuilder: React.FC<AdminLabBillBuilderProps> = ({ hospit
     }
     if (patientPhone.trim()) {
       messageHead += `\n📞 *যোগাযোগ:* ${patientPhone.trim()}`;
+    }
+    if (patientAddress.trim()) {
+      messageHead += `\n📍 *ঠিকানা:* ${patientAddress.trim()}`;
     }
     
     messageHead += `\n📅 *তারিখ:* ${new Date().toLocaleDateString('bn-BD')}\n`;
@@ -341,6 +346,17 @@ export const AdminLabBillBuilder: React.FC<AdminLabBillBuilderProps> = ({ hospit
                       className="w-full bg-white border border-slate-150 rounded-xl py-2.5 pl-9 pr-3 text-xs font-bold outline-none focus:border-blue-500 placeholder-slate-400 text-slate-800"
                     />
                     <Phone size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  </div>
+
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="রোগীর ঠিকানা (যেমন: রাজারহাট, কুড়িগ্রাম)" 
+                      value={patientAddress}
+                      onChange={(e) => setPatientAddress(e.target.value)}
+                      className="w-full bg-white border border-slate-150 rounded-xl py-2.5 pl-9 pr-3 text-xs font-bold outline-none focus:border-blue-500 placeholder-slate-400 text-slate-800"
+                    />
+                    <MapPin size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   </div>
                 </div>
               </div>
