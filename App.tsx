@@ -34,7 +34,8 @@ import SEO from './SEO';
 import { DoctorProfilePage, ClinicLandingPage, SpecialistLandingPage, DistrictLandingPage } from './LandingPages';
 import { BookingModal } from './src/components/BookingModal';
 import { SecurityGuard, sanitizeInput } from './src/components/SecurityGuard';
-import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight } from 'lucide-react';
+import { AdminLabBillBuilder } from './src/components/AdminLabBillBuilder';
+import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- UI Components ---
@@ -260,7 +261,7 @@ const AdminDashboard: React.FC<{
   onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
   onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void
 }> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, onAdd, onEdit, onDelete }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -282,9 +283,11 @@ const AdminDashboard: React.FC<{
       <div className="bg-white border-b px-6 flex gap-6 overflow-x-auto no-scrollbar">
         {[
           { id: 'overview', label: 'Overview', icon: <Zap size={14} /> },
+          { id: 'billing', label: 'Billing Builder', icon: <Percent size={14} /> },
           { id: 'doctors', label: 'Specialists', icon: <Stethoscope size={14} /> },
           { id: 'orders', label: 'Booking Orders', icon: <MessageSquare size={14} /> },
-          { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> }
+          { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> },
+          { id: 'labtests', label: 'Manage Lab Tests', icon: <FileText size={14} /> }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -395,6 +398,12 @@ const AdminDashboard: React.FC<{
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeSubTab === 'billing' && (
+          <div className="animate-in fade-in slide-in-from-right-4">
+            <AdminLabBillBuilder />
           </div>
         )}
 
