@@ -12,18 +12,21 @@ service cloud.firestore {
     function isEmailVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
-    // প্রোফাইল থেকে রোল চেক করা (বড় হাতের অক্ষরে কোড অনুযায়ী)
-    function getUserData() { 
-      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data; 
+    // প্রোফাইল থেকে রোল চেক করা safely
+    function hasRole(role) {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == role;
     }
+    
     function isAdmin() { 
       return isSignedIn() && (
         request.auth.token.email == 'doctorapp0p@gmail.com' || 
         request.auth.token.email == 'moderator@nilpha.com' ||
-        getUserData().role == 'ADMIN'
+        hasRole('ADMIN')
       ); 
     }
-    function isDoctor() { return isSignedIn() && getUserData().role == 'DOCTOR'; }
+    function isDoctor() { return hasRole('DOCTOR'); }
     
     function isValidId(id) { return id is string && id.size() <= 128; }
     

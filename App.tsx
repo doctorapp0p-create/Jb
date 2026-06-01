@@ -36,7 +36,7 @@ import { BookingModal } from './src/components/BookingModal';
 import { SecurityGuard, sanitizeInput } from './src/components/SecurityGuard';
 import { AdminLabBillBuilder } from './src/components/AdminLabBillBuilder';
 import { AuthModal } from './src/components/AuthModal';
-import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText } from 'lucide-react';
+import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText, Youtube } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- UI Components ---
@@ -1614,6 +1614,7 @@ export default function App() {
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">Nilpha...</div>;
 
   const HOTLINE_CONTACT = "01518395772";
+  const YOUTUBE_CHANNEL_URL = "https://youtube.com/@NilphaHealthcare"; // এখানে আপনার ইউটিউব চ্যানেলের লিংক বসান
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none overflow-x-hidden">
@@ -1689,6 +1690,15 @@ export default function App() {
                   <span className="text-blue-600">Nil</span>pha
                 </h1>
                 <div className="flex gap-2 items-center">
+                   <a 
+                     href={YOUTUBE_CHANNEL_URL} 
+                     target="_blank" 
+                     rel="noopener noreferrer" 
+                     className="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-full flex items-center justify-center text-red-600 border-2 border-red-100 active:scale-90 transition-all cursor-pointer" 
+                     title="ইউটিউব চ্যানেল (টিউটোরিয়াল ও নিয়মাবলী)"
+                   >
+                     <Youtube size={16} />
+                   </a>
                    <button onClick={handleShare} className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border-2 border-slate-50 active:scale-90 transition-all" title="Share App">
                      <Share2 size={16} />
                    </button>
@@ -1725,6 +1735,19 @@ export default function App() {
                     >
                       <span className="text-xl">💬</span> ডাক্তার সম্পর্কিত জানতে whatsapp এ যোগাযোগ করুন
                     </button>
+
+                    {/* YouTube Channel Video Guide Card */}
+                    <a 
+                      href={YOUTUBE_CHANNEL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full bg-red-600 hover:bg-red-700 text-white p-5 rounded-[32px] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-red-500/10 active:scale-95 transition-all text-center border-b-4 border-red-800"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <Youtube size={18} className="fill-white" />
+                        <span>ব্যবহারের নিয়ম-কানুন ও ভিডিও গাইড (YouTube)</span>
+                      </div>
+                    </a>
 
                     <div className="space-y-4">
                       <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
