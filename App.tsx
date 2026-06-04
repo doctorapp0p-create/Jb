@@ -1614,7 +1614,7 @@ export default function App() {
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">Nilpha...</div>;
 
   const HOTLINE_CONTACT = "01518395772";
-  const YOUTUBE_CHANNEL_URL = "https://youtube.com/@NilphaHealthcare"; // এখানে আপনার ইউটিউব চ্যানেলের লিংক বসান
+  const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DoctorM-c9k";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none overflow-x-hidden">
