@@ -42,7 +42,18 @@ const SEO: React.FC<SEOProps> = ({
     'Doctor Kutum Nilphamari',
     'Best Doctor in Nilphamari',
     'নীলফামারীর সেরা ডাক্তার',
-    'JB Healthcare Nilphamari'
+    'JB Healthcare Nilphamari',
+    'Nilphamari doctor list',
+    'nilphamari Sera doctor',
+    'নীলফামারী ডাক্তারদের তালিকা',
+    'নীলফামারী সকল ডাক্তারদের তালিকা',
+    'Nilphamari Gynecology doctor',
+    'nilphamari orthopaedic doctor',
+    'nilphamari ent doctor',
+    'nilphamari medicine doctor',
+    'nilphamari neurology doctor',
+    'nilphamari surgery doctor',
+    'নীলফামারী চর্ম যৌন রোগ বিশেষজ্ঞ ডাক্তার'
   ];
   const allKeywords = [...new Set([...keywords, ...defaultKeywords])].join(', ');
 

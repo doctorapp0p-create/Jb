@@ -9,21 +9,20 @@ service cloud.firestore {
 
     // --- হেল্পার ফাংশন ---
     function isSignedIn() { return request.auth != null; }
-    function isEmailVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isEmailVerified() { return isSignedIn() && request.auth.token.get('email_verified', false) == true; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
     // প্রোফাইল থেকে রোল চেক করা safely
     function hasRole(role) {
       return isSignedIn() && 
              exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == role;
+             get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('role', '') == role;
     }
     
     function isAdmin() { 
       return isSignedIn() && (
-        request.auth.token.email == 'doctorapp0p@gmail.com' || 
-        request.auth.token.email == 'moderator@nilpha.com' ||
-        hasRole('ADMIN')
+        request.auth.token.get('email', '') == 'doctorapp0p@gmail.com' || 
+        request.auth.token.get('email', '') == 'moderator@nilpha.com'
       ); 
     }
     function isDoctor() { return hasRole('DOCTOR'); }
@@ -45,15 +44,22 @@ service cloud.firestore {
 
     // --- প্রোফাইল রুলস ---
     match /profiles/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId) && (
-        (incoming().role == 'PATIENT' && incoming().status == 'active') ||
-        (request.auth.token.email == 'moderator@nilpha.com' && incoming().role == 'ADMIN')
+      allow get: if isSignedIn() && (
+        request.auth.uid == userId || 
+        isAdmin()
       );
-      allow update: if isAdmin() || (
-        isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'phone'])
+      
+      allow list: if isAdmin();
+      
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        (incoming().get('role', '') == 'PATIENT' && incoming().get('status', '') == 'active') ||
+        (isAdmin() && incoming().get('role', '') == 'ADMIN' && incoming().get('status', '') == 'active')
+      );
+      
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (request.auth.uid == userId && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'phone']))
       );
     }
 
