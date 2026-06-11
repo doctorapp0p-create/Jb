@@ -1051,7 +1051,28 @@ export default function App() {
       const hospRes = await getDocs(collection(db, 'hospitals'));
       const testRes = await getDocs(collection(db, 'lab_tests'));
       
-      const dbDoctors = docRes.docs.map(d => ({ id: d.id, ...d.data() } as Doctor));
+      const dbDoctors = docRes.docs.map(d => {
+        const data = d.data() as Doctor;
+        if (d.id === 'j-sakil') {
+          // If we are logged in as admin/moderator and the DB version is outdated, update it in Firestore
+          const needsUpdate = data.specialty !== 'Orthopedics' || !data.degree.includes('অর্থোপেডিক');
+          if (needsUpdate && profile && (profile.role === UserRole.ADMIN || profile.role === UserRole.MODERATOR)) {
+            import('firebase/firestore').then(({ doc, updateDoc }) => {
+              updateDoc(doc(db, 'doctors', 'j-sakil'), {
+                specialty: 'Orthopedics',
+                degree: 'MBBS (ঢাকা), এসিপিএস (পেইন, সাইকোলজি) – ইতালি, ফেলো ইন পেইন মেডিসিন, EFIC (ডেনমার্ক), IASP (আমেরিকা), PGT (অর্থোপেডিক/অর্থো), পঙ্গু হাসপাতাল, ঢাকা | ফাউন্ডেশন ডক্টর মেম্বার, RCGP (লন্ডন) | নন সার্জিক্যাল পেইন ম্যানেজমেন্ট, ব্যথা মেডিসিন ও অর্থোপেডিক বিশেষজ্ঞ | BMDC No: A-43198'
+              }).catch(e => console.error("Auto-correcting Dr. Shakil's specialty failed: ", e));
+            });
+          }
+          return {
+            ...data,
+            id: d.id,
+            specialty: 'Orthopedics',
+            degree: 'MBBS (ঢাকা), এসিপিএস (পেইন, সাইকোলজি) – ইতালি, ফেলো ইন পেইন মেডিসিন, EFIC (ডেনমার্ক), IASP (আমেরিকা), PGT (অর্থোপেডিক/অর্থো), পঙ্গু হাসপাতাল, ঢাকা | ফাউন্ডেশন ডক্টর মেম্বার, RCGP (লন্ডন) | নন সার্জিক্যাল পেইন ম্যানেজমেন্ট, ব্যথা মেডিসিন ও অর্থোপেডিক বিশেষজ্ঞ | BMDC No: A-43198'
+          };
+        }
+        return { id: d.id, ...data } as Doctor;
+      });
       const dbHospitals = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
       const dbTests = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
 
@@ -1482,7 +1503,19 @@ export default function App() {
         const docClinics = d.clinics || [];
         const hospitalMatch = hospitals.some(h => docClinics.includes(h.id) && h.name.toLowerCase().includes(search));
         
-        return docName.includes(search) || docSpecialty.includes(search) || docDegree.includes(search) || hospitalMatch;
+        // Match by specialty synonyms and Bengali names (e.g. matching "অর্থোপেডিক", "অর্থপেডিক", "ortho" as Orthopedics)
+        const specialtyObj = SPECIALTIES.find(spec => spec.name.toLowerCase() === docSpecialty || spec.id === docSpecialty);
+        const specialtyMatch = specialtyObj && (
+          specialtyObj.name.toLowerCase().includes(search) ||
+          specialtyObj.bnName.toLowerCase().includes(search) ||
+          (specialtyObj.id === 'orthopedics' && (search.includes('অর্থোপেডিক') || search.includes('অর্থপেডিক') || search.includes('ortho')))
+        );
+        
+        return docName.includes(search) || 
+               docSpecialty.includes(search) || 
+               docDegree.includes(search) || 
+               hospitalMatch || 
+               specialtyMatch;
       });
     }
 
