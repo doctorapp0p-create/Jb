@@ -1505,11 +1505,35 @@ export default function App() {
         
         // Match by specialty synonyms and Bengali names (e.g. matching "অর্থোপেডিক", "অর্থপেডিক", "ortho" as Orthopedics)
         const specialtyObj = SPECIALTIES.find(spec => spec.name.toLowerCase() === docSpecialty || spec.id === docSpecialty);
-        const specialtyMatch = specialtyObj && (
+        
+        // Define specialty keyword associations for robust search (bidirectional matching)
+        const specialtyKeywordsMap: Record<string, string[]> = {
+          orthopedics: ['ortho', 'orthopedics', 'অর্থোপেডিক', 'অর্থোপেডিক্স', 'অর্থোপেডিকস', 'অর্থপেডিক', 'অর্থপেডিক্স', 'অর্থপেডিকস', 'হাড়', 'হাড়', 'পঙ্গু'],
+          medicine: ['medicine', 'মেডিসিন', 'মেডিসন', 'মেডেসিন', 'এমেডিসিন'],
+          cardiology: ['cardio', 'কার্ডিওলজি', 'কার্ডিও', 'হৃদরোগ', 'হার্ট', 'heart'],
+          neuromedicine: ['neuro', 'নিউরো', 'নিউরোলজি', 'মস্তিষ্ক', 'স্ট্রোক', 'brain'],
+          gynecology: ['gyn', 'গাইনী', 'গাইনি', 'গাইনোকোলজি', 'গর্ভবতী', 'গর্ভ', 'প্রসূতি', 'obstetrics', 'obs'],
+          pediatrics: ['pediatr', 'শিশু', 'নবজাতক', 'কিশোর', 'child', 'baby'],
+          surgery: ['surgeon', 'সার্জারি', 'সার্জারী', 'অপারেশন', 'surgery'],
+          urology: ['uro', 'ইউরোলজি', 'ইউরোলজিস্ট', 'মূত্র', 'bladder'],
+          endocrinology: ['endocrine', 'ডায়াবেটিস', 'হরমোন', 'diabetes', 'hormone'],
+          ent: ['ent', 'নাক', 'কান', 'গলা', 'nose', 'ear', 'throat'],
+          dermatology: ['derm', 'চর্ম', 'যৌন', 'স্কিন', 'skin', 'এলার্জি'],
+          ophthalmology: ['eye', 'চোখ', 'চক্ষু', 'দৃষ্টি', 'ophthal'],
+          psychiatry: ['psych', 'মানসিক', 'মন', 'পাগল', 'বিষন্নতা'],
+          dentistry: ['dent', 'দাঁত', 'দন্ত', 'ডেন্টাল', 'tooth', 'teeth'],
+          gastroenterology: ['gastro', 'লিভার', 'পরিপাকতন্ত্র', 'গ্যাস্ট্রিক', 'পেট', 'liver', 'stomach'],
+          nephrology: ['nephro', 'কিডনি', 'নেফ্রোলজি', 'renal', 'kidney'],
+          oncology: ['onco', 'ক্যান্সার', 'টিউমার', 'cancer', 'tumor'],
+          hematology: ['hemato', 'রক্তরোগ', 'রক্ত', 'blood'],
+          'physical-medicine': ['physical', 'ফিজিকেল', 'ব্যায়াম', 'থেরাপি', 'ফিজিওথেরাপি', 'physio']
+        };
+
+        const listKeywords = specialtyKeywordsMap[docSpecialty] || [];
+        const specialtyMatch = (specialtyObj && (
           specialtyObj.name.toLowerCase().includes(search) ||
-          specialtyObj.bnName.toLowerCase().includes(search) ||
-          (specialtyObj.id === 'orthopedics' && (search.includes('অর্থোপেডিক') || search.includes('অর্থপেডিক') || search.includes('ortho')))
-        );
+          specialtyObj.bnName.toLowerCase().includes(search)
+        )) || listKeywords.some(kw => search.includes(kw) || kw.includes(search));
         
         return docName.includes(search) || 
                docSpecialty.includes(search) || 
