@@ -983,7 +983,7 @@ export default function App() {
     }
   };
 
-  const PAYMENT_NUMBERS = { bkash: '01518395772', nagad: '01846800973' };
+  const PAYMENT_NUMBERS = { bkash: '01846800973', nagad: '01846800973' };
 
   useEffect(() => {
     const init = async () => {
