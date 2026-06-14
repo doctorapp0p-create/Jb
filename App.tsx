@@ -889,7 +889,7 @@ export default function App() {
     };
   }, []);
 
-  const WHATSAPP_NUMBER = '8801518395772';
+  const WHATSAPP_NUMBER = '8801846800973';
 
   const handleWhatsAppConsult = (doctor: Doctor) => {
     setBookingDoctor(doctor);
@@ -1165,7 +1165,7 @@ export default function App() {
                 full_name: 'Main Moderator', 
                 role: UserRole.ADMIN, 
                 status: 'active', 
-                phone: '01518395772' 
+                phone: '01846800973' 
               };
               await setDoc(doc(db, 'profiles', firebaseUser.uid), newModProf);
             } else {
@@ -1178,7 +1178,7 @@ export default function App() {
           let modProf = profileSnap.data() as Profile;
           
           if (!modProf) {
-            modProf = { id: firebaseUser.uid, full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01518395772' };
+            modProf = { id: firebaseUser.uid, full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01846800973' };
             await setDoc(profileRef, modProf);
           }
 
@@ -1670,7 +1670,7 @@ export default function App() {
 
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">Nilpha...</div>;
 
-  const HOTLINE_CONTACT = "01518395772";
+  const HOTLINE_CONTACT = "01846800973";
   const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DoctorM-c9k";
 
   return (
