@@ -889,7 +889,7 @@ export default function App() {
     };
   }, []);
 
-  const WHATSAPP_NUMBER = '8801846800973';
+  const WHATSAPP_NUMBER = '8801352669100';
 
   const handleWhatsAppConsult = (doctor: Doctor) => {
     setBookingDoctor(doctor);
@@ -983,7 +983,7 @@ export default function App() {
     }
   };
 
-  const PAYMENT_NUMBERS = { bkash: '01846800973', nagad: '01846800973' };
+  const PAYMENT_NUMBERS = { bkash: '01352669100', nagad: '01352669100' };
 
   useEffect(() => {
     const init = async () => {
@@ -1076,10 +1076,33 @@ export default function App() {
       const dbHospitals = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
       const dbTests = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
 
-      // Use source of truth (DB) if it has data, otherwise fallback to constants for initial load
-      setDoctors(dbDoctors.length > 0 ? dbDoctors : DOCTORS);
-      setHospitals(dbHospitals.length > 0 ? dbHospitals : CLINICS);
-      setLabTests(dbTests.length > 0 ? dbTests : LAB_TESTS);
+      // Merge DB data with local constants: DB version has precedence, but local entries not in DB are merged
+      const mergedDoctors = dbDoctors.length > 0
+        ? [...dbDoctors, ...DOCTORS.filter(d => !dbDoctors.some(dbD => dbD.id === d.id))]
+        : DOCTORS;
+
+      const mergedHospitalsList = dbHospitals.length > 0
+        ? dbHospitals.map(dbH => {
+            const localC = CLINICS.find(c => c.id === dbH.id);
+            if (localC) {
+              const combinedDoctors = Array.from(new Set([...(dbH.doctors || []), ...(localC.doctors || [])]));
+              return { ...dbH, ...localC, doctors: combinedDoctors };
+            }
+            return dbH;
+          })
+        : CLINICS;
+
+      const finalHospitals = dbHospitals.length > 0
+        ? [...mergedHospitalsList, ...CLINICS.filter(c => !dbHospitals.some(dbH => dbH.id === c.id))]
+        : CLINICS;
+
+      const finalTests = dbTests.length > 0
+        ? [...dbTests, ...LAB_TESTS.filter(t => !dbTests.some(dbT => dbT.id === t.id))]
+        : LAB_TESTS;
+
+      setDoctors(mergedDoctors);
+      setHospitals(finalHospitals);
+      setLabTests(finalTests);
     } catch (error) {
        console.error("Error fetching data:", error);
        // Fallback to constants on error
@@ -1165,7 +1188,7 @@ export default function App() {
                 full_name: 'Main Moderator', 
                 role: UserRole.ADMIN, 
                 status: 'active', 
-                phone: '01846800973' 
+                phone: '01352669100' 
               };
               await setDoc(doc(db, 'profiles', firebaseUser.uid), newModProf);
             } else {
@@ -1178,7 +1201,7 @@ export default function App() {
           let modProf = profileSnap.data() as Profile;
           
           if (!modProf) {
-            modProf = { id: firebaseUser.uid, full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01846800973' };
+            modProf = { id: firebaseUser.uid, full_name: 'Main Moderator', role: UserRole.ADMIN, status: 'active', phone: '01352669100' };
             await setDoc(profileRef, modProf);
           }
 
@@ -1670,7 +1693,7 @@ export default function App() {
 
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">Nilpha...</div>;
 
-  const HOTLINE_CONTACT = "01846800973";
+  const HOTLINE_CONTACT = "01352669100";
   const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DoctorM-c9k";
 
   return (

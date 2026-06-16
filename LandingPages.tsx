@@ -8,7 +8,7 @@ import { Stethoscope, MapPin, Clock, Phone, Star, ArrowRight, Microscope, Shield
 import { slugify } from './utils';
 import { BookingModal } from './src/components/BookingModal';
 
-const HOTLINE = "01846800973";
+const HOTLINE = "01352669100";
 
 // --- Components ---
 
