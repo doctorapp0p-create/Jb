@@ -763,7 +763,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [contactPhone, setContactPhone] = useState('');
   const [patientName, setPatientName] = useState('');
-  const [tickerMessage, setTickerMessage] = useState('Nilpha-তে আপনাকে স্বাগত! ডাক্তার চেম্বারে বসার সময় এবং ডাক্তার ফি চূড়ান্ত জানার জন্য আমাদের হট লাইন নাম্বারে যোগাযোগ করুন। যেকোনো প্রয়োজনে কল করুন: ০১৮৪৬৮০০৯৭৩');
+  const [tickerMessage, setTickerMessage] = useState('Nilpha-তে আপনাকে স্বাগত! ডাক্তার চেম্বারে বসার সময় এবং ডাক্তার ফি চূড়ান্ত জানার জন্য আমাদের হট লাইন নাম্বারে যোগাযোগ করুন। যেকোনো প্রয়োজনে কল করুন: ০১৩৫২৬৬৯১০০');
 
   // Specialty Scroll Ref
   const specialtyScrollRef = useRef<HTMLDivElement>(null);
@@ -1027,7 +1027,12 @@ export default function App() {
         const settingsRef = doc(db, 'settings', 'ticker_message');
         const settingsSnap = await getDoc(settingsRef);
         if (settingsSnap.exists()) {
-          setTickerMessage(settingsSnap.data().value);
+          let val = settingsSnap.data().value;
+          if (val.includes('01846800973') || val.includes('০১৮৪৬৮০০৯৭৩')) {
+            val = val.replace(/01846800973/g, '01352669100').replace(/০১৮৪৬৮০০৯৭৩/g, '০১৩৫২৬৬৯১০০');
+            setDoc(settingsRef, { key: 'ticker_message', value: val }).catch(e => console.error("Auto updating ticker DB failed: ", e));
+          }
+          setTickerMessage(val);
         }
       } catch (error) {
         console.error("Failed to load ticker settings:", error);
@@ -1072,7 +1077,16 @@ export default function App() {
           };
         }
         return { id: d.id, ...data } as Doctor;
-      });
+      }).filter(d => d.id !== 'moun-biplab');
+
+      // Check if moun-biplab exists in Firestore and clean it up if user is admin/moderator
+      const hasBiplabInDb = docRes.docs.some(d => d.id === 'moun-biplab');
+      if (hasBiplabInDb && profile && (profile.role === UserRole.ADMIN || profile.role === UserRole.MODERATOR)) {
+        import('firebase/firestore').then(({ doc, deleteDoc }) => {
+          deleteDoc(doc(db, 'doctors', 'moun-biplab')).catch(e => console.error("Auto-deleting Dr. Biplab failed: ", e));
+        });
+      }
+
       const dbHospitals = hospRes.docs.map(h => ({ id: h.id, ...h.data() } as Clinic));
       const dbTests = testRes.docs.map(t => ({ id: t.id, ...t.data() } as LabTest));
 
@@ -1085,7 +1099,17 @@ export default function App() {
         ? dbHospitals.map(dbH => {
             const localC = CLINICS.find(c => c.id === dbH.id);
             if (localC) {
-              const combinedDoctors = Array.from(new Set([...(dbH.doctors || []), ...(localC.doctors || [])]));
+              const combinedDoctors = Array.from(new Set([...(dbH.doctors || []), ...(localC.doctors || [])])).filter(id => id !== 'moun-biplab');
+              
+              // If c-moun hospital has moun-biplab in its DB doctors array, and active user is admin, auto-correct the database
+              if (dbH.id === 'c-moun' && dbH.doctors?.includes('moun-biplab') && profile && (profile.role === UserRole.ADMIN || profile.role === UserRole.MODERATOR)) {
+                import('firebase/firestore').then(({ doc, updateDoc }) => {
+                  updateDoc(doc(db, 'hospitals', 'c-moun'), {
+                    doctors: combinedDoctors
+                  }).catch(e => console.error("Auto-correcting C-Moun hospital doctors failed: ", e));
+                });
+              }
+
               return { ...dbH, ...localC, doctors: combinedDoctors };
             }
             return dbH;
@@ -1808,13 +1832,21 @@ export default function App() {
                        <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                     </div>
 
-                    {/* WhatsApp Inquiry Button */}
-                    <button 
-                      onClick={() => window.open(`https://wa.me/88${HOTLINE_CONTACT}?text=Hello,%20I%20want%20to%20know%20more%20about%20doctors`, '_blank')}
-                      className="w-full bg-emerald-500 hover:bg-emerald-600 text-white p-5 rounded-[32px] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-4 border-emerald-700"
-                    >
-                      <span className="text-xl">💬</span> ডাক্তার সম্পর্কিত জানতে whatsapp এ যোগাযোগ করুন
-                    </button>
+                    {/* WhatsApp & Call Inquiry Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button 
+                        onClick={() => window.open(`https://wa.me/88${HOTLINE_CONTACT}?text=Hello,%20I%20want%20to%20know%20more%20about%20doctors`, '_blank')}
+                        className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white p-5 rounded-[32px] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-4 border-emerald-700 cursor-pointer"
+                      >
+                        <span className="text-xl">💬</span> ডাক্তার সম্পর্কিত জানতে whatsapp এ যোগাযোগ করুন
+                      </button>
+                      <a 
+                        href={`tel:${HOTLINE_CONTACT}`}
+                        className="flex-1 bg-sky-600 hover:bg-sky-700 text-white p-5 rounded-[32px] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-4 border-sky-800 text-center cursor-pointer"
+                      >
+                        <span className="text-xl">📞</span> কল করুন
+                      </a>
+                    </div>
 
                     {/* YouTube Channel Video Guide Card */}
                     <a 
