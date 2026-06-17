@@ -53,6 +53,7 @@ service cloud.firestore {
       
       allow create: if isSignedIn() && request.auth.uid == userId && (
         (incoming().get('role', '') == 'PATIENT' && incoming().get('status', '') == 'active') ||
+        (incoming().get('role', '') == 'RURAL_DOCTOR' && incoming().get('status', '') == 'active') ||
         (isAdmin() && incoming().get('role', '') == 'ADMIN' && incoming().get('status', '') == 'active')
       );
       
@@ -108,6 +109,15 @@ service cloud.firestore {
         isSignedIn() && existing().user_id == request.auth.uid &&
         incoming().diff(existing()).affectedKeys().hasOnly(['sender_name', 'sender_contact', 'patient_name', 'trx_id', 'payment_method'])
       );
+      allow delete: if isAdmin();
+    }
+
+    // --- অ্যাপয়েন্টমেন্ট রুলস ---
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && (existing().patient_id == request.auth.uid || isAdmin() || hasRole('RURAL_DOCTOR'));
+      allow list: if isSignedIn() && (resource.data.patient_id == request.auth.uid || isAdmin() || hasRole('RURAL_DOCTOR'));
+      allow create: if isSignedIn() && incoming().patient_id == request.auth.uid;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
   }

@@ -21,6 +21,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onGoogleLogin,
   isProcessing
 }) => {
+  const [isRuralDoctor, setIsRuralDoctor] = React.useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -91,6 +93,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <form onSubmit={onSubmit} className="space-y-4">
             {authMode === 'register' && (
               <>
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-2xl mb-4 text-left">
+                  <input 
+                    type="checkbox" 
+                    id="isRuralDoctor" 
+                    name="isRuralDoctor"
+                    checked={isRuralDoctor}
+                    onChange={(e) => setIsRuralDoctor(e.target.checked)}
+                    className="accent-blue-600 rounded cursor-pointer"
+                  />
+                  <label htmlFor="isRuralDoctor" className="text-[10px] font-black text-blue-700 cursor-pointer select-none uppercase tracking-wider">
+                    আমি একজন পল্লী চিকিৎসক (প্রতিনিধি পিন প্রয়োজন)
+                  </label>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-1">পূর্ণ নাম</label>
                   <div className="relative">
@@ -98,7 +114,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       name="fullName"
                       type="text"
                       required
-                      placeholder="যেমন: মোঃ সাব্বির হোসাইন"
+                      placeholder={isRuralDoctor ? "যেমন: ডাঃ আব্দুর রহমান (ডাক্তার হিসেবে নাম)" : "যেমন: মোঃ সাব্বির হোসাইন"}
                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
                     />
                     <User size={14} className="text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -118,6 +134,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Phone size={14} className="text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   </div>
                 </div>
+
+                {isRuralDoctor ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-1">চিকিৎসক কোড</label>
+                      <input
+                        name="ruralDoctorCode"
+                        type="text"
+                        required
+                        placeholder="যেমন: RD001"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-1">প্রতিনিধি পিন</label>
+                      <input
+                        name="representativePin"
+                        type="password"
+                        required
+                        placeholder="••••"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">কোন পল্লী চিকিৎসকের রেফার কোড (ঐচ্ছিক)</label>
+                    <input
+                      name="referredByCode"
+                      type="text"
+                      defaultValue={localStorage.getItem('prefilled_referral_code') || ""}
+                      placeholder="যেমন: RD001"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
+                    />
+                  </div>
+                )}
               </>
             )}
 

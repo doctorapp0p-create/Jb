@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth as getTempAuth, signOut as signTempOut } from 'firebase/auth';
 import { UserRole, Doctor, Clinic, Medicine, Order, Profile, Prescription, LabTest } from './types';
 import { DOCTORS, CLINICS, MEDICINES, EMERGENCY_SERVICES, DISTRICTS, LAB_TESTS, SPECIALTIES } from './constants';
 import { slugify } from './utils';
@@ -258,12 +260,132 @@ const AdminDashboard: React.FC<{
   hospitals: Clinic[],
   labTests: LabTest[],
   orders: Order[],
+  profiles: Profile[],
+  appointments: any[],
   onAdd: (type: 'doctor' | 'hospital' | 'lab_test') => void,
   onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
-  onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void
-}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, onAdd, onEdit, onDelete }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing'>('overview');
+  onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void,
+  onRefreshAdminData?: () => Promise<void>
+}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, profiles, appointments, onAdd, onEdit, onDelete, onRefreshAdminData }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing' | 'referrals'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // States for Admin's Rural Doctor Registration Engine
+  const [rdName, setRdName] = useState('');
+  const [rdPhone, setRdPhone] = useState('');
+  const [rdPass, setRdPass] = useState('123456');
+  const [rdCode, setRdCode] = useState('');
+  const [isCreatingRD, setIsCreatingRD] = useState(false);
+  const [createdRDSuccess, setCreatedRDSuccess] = useState<{ name: string, phone: string, pass: string, code: string } | null>(null);
+  const [rdError, setRdError] = useState<string | null>(null);
+
+  const lastRDCode = useMemo(() => {
+    const rds = profiles.filter(p => p.role === UserRole.RURAL_DOCTOR);
+    let maxNum = 500;
+    rds.forEach(r => {
+      if (r.referral_code && r.referral_code.toUpperCase().startsWith('RD')) {
+        const num = parseInt(r.referral_code.toUpperCase().replace('RD', ''), 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    return `RD${maxNum + 1}`;
+  }, [profiles]);
+
+  useEffect(() => {
+    if (!rdCode || rdCode.startsWith('RD')) {
+      setRdCode(lastRDCode);
+    }
+  }, [lastRDCode]);
+
+  const handleCreateRuralDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRdError(null);
+    setCreatedRDSuccess(null);
+
+    const name = rdName.trim();
+    const phone = rdPhone.trim();
+    const pass = rdPass.trim();
+    const code = rdCode.trim().toUpperCase();
+
+    if (!name || !phone || !pass || !code) {
+      setRdError('সবগুলো তথ্য বিবরণী সঠিকভাবে পূরণ করুন।');
+      return;
+    }
+
+    if (phone.length !== 11 || !phone.startsWith('01')) {
+      setRdError('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)।');
+      return;
+    }
+
+    if (pass.length < 6) {
+      setRdError('লগইন পাসওয়ার্ড ন্যূনতম ৬ ডিজিটের হতে হবে।');
+      return;
+    }
+
+    const codeExists = profiles.some(p => p.referral_code?.toUpperCase() === code);
+    if (codeExists) {
+      setRdError(`এই কোডটি (${code}) ইতিমধ্যে অন্য চিকিৎসকের জন্য ব্যবহৃত হচ্ছে। আলাদা কোড ব্যবহার করুন।`);
+      return;
+    }
+
+    setIsCreatingRD(true);
+    let tempAppRef: any = null;
+
+    try {
+      const appOptions = auth.app.options;
+      const tempAppName = `TempRDApp-${Date.now()}`;
+      tempAppRef = initializeApp(appOptions, tempAppName);
+      const tempAuth = getTempAuth(tempAppRef);
+
+      const normalizedEmail = `${phone}@nilpha.com`;
+
+      const credential = await createUserWithEmailAndPassword(tempAuth, normalizedEmail, pass);
+      const userId = credential.user.uid;
+
+      const newRCProfile: Profile = {
+        id: userId,
+        full_name: name,
+        phone: phone,
+        role: UserRole.RURAL_DOCTOR,
+        status: 'active',
+        referral_code: code
+      };
+
+      await setDoc(doc(db, 'profiles', userId), newRCProfile);
+
+      await signTempOut(tempAuth);
+
+      setCreatedRDSuccess({
+        name,
+        phone,
+        pass,
+        code
+      });
+
+      setRdName('');
+      setRdPhone('');
+      setRdPass('123456');
+      setRdCode('');
+
+      if (onRefreshAdminData) {
+        await onRefreshAdminData();
+      }
+    } catch (err: any) {
+      console.error("Create RD error:", err);
+      setRdError(err.message || 'অ্যাকাউন্ট তৈরি করার সময় একটি সমস্যা হয়েছে।');
+    } finally {
+      if (tempAppRef) {
+        try {
+          await deleteApp(tempAppRef);
+        } catch (delErr) {
+          console.error("Temp App delete fail:", delErr);
+        }
+      }
+      setIsCreatingRD(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -288,7 +410,8 @@ const AdminDashboard: React.FC<{
           { id: 'doctors', label: 'Specialists', icon: <Stethoscope size={14} /> },
           { id: 'orders', label: 'Booking Orders', icon: <MessageSquare size={14} /> },
           { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> },
-          { id: 'labtests', label: 'Manage Lab Tests', icon: <FileText size={14} /> }
+          { id: 'labtests', label: 'Manage Lab Tests', icon: <FileText size={14} /> },
+          { id: 'referrals', label: 'Rural Doctors', icon: <BadgeCheck size={14} className="text-emerald-500" /> }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -479,6 +602,192 @@ const AdminDashboard: React.FC<{
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeSubTab === 'referrals' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-left">
+            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Rural Doctors & Referrals ({profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length})</h2>
+            
+            {/* Top Stat Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-900 text-white p-6 rounded-[32px] border border-slate-800 shadow-md">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">মোট পল্লী চিকিৎসক</p>
+                <p className="text-3xl font-black text-indigo-400">{profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length} জন</p>
+              </div>
+              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">মোট নিবন্ধিত রোগী</p>
+                <p className="text-3xl font-black text-slate-800">{profiles.filter(p => p.role === UserRole.PATIENT).length} জন</p>
+              </div>
+              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">রেফার করা সিরিয়াল</p>
+                <p className="text-3xl font-black text-teal-600">{appointments.filter(a => a.referred_by_code).length} / {appointments.length} বার</p>
+              </div>
+            </div>
+
+            {/* Main Content Grid: 2 Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* Left Column: Premium Rural Doctor Registration Form (Specialized Profile Registry) */}
+              <div className="lg:col-span-5 bg-gradient-to-br from-indigo-50/50 to-blue-50/30 p-6 rounded-[32px] border-2 border-indigo-100/80 shadow-md space-y-6">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">Onboarding System</span>
+                    <span className="text-[9px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-md uppercase tracking-wider">Secure PIN</span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-800 uppercase tracking-tight mt-2 font-black leading-tight">পল্লী চিকিৎসক অ্যাকাউন্ট ক্রিয়েটর</h3>
+                  <p className="text-[11px] text-slate-500 font-bold mt-1">রেফারেল-কোড ব্যবহারকারী চিকিৎসকদের বিশেষ ও পৃথক প্রোফাইল তৈরি করার সিকিউর প্যানেল।</p>
+                </div>
+
+                {rdError && (
+                  <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl border border-rose-100 text-xs font-bold leading-relaxed">
+                    ⚠️ {rdError}
+                  </div>
+                )}
+
+                {createdRDSuccess ? (
+                  <div className="bg-emerald-50 text-emerald-800 p-6 rounded-3xl border border-emerald-100 space-y-4 animate-in zoom-in-95">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black bg-emerald-600 text-white p-1 rounded-full">✓</span>
+                      <h4 className="font-extrabold text-sm uppercase tracking-tight">সফলভাবে তৈরি হয়েছে!</h4>
+                    </div>
+                    <p className="text-[11px] font-bold text-emerald-700">পল্লী চিকিৎসকের লগইন এবং রেফারেল বিবরণী নিচে দেওয়া হলো। এটি কপি করে ওনার সাথে শেয়ার করুন:</p>
+                    
+                    <div className="bg-white/80 p-4 rounded-2xl border border-emerald-100 text-xs font-bold space-y-2 font-mono text-slate-700">
+                      <p>👤 নাম: {createdRDSuccess.name}</p>
+                      <p>📱 মোবাইল: {createdRDSuccess.phone}</p>
+                      <p>🔑 পাসওয়ার্ড: {createdRDSuccess.pass}</p>
+                      <p>🎟️ কোড: {createdRDSuccess.code}</p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button 
+                        onClick={() => {
+                          const text = `নিলফা (Nilpha) ডিজিটাল মেডিকেল প্ল্যাটফর্মে আপনার "পল্লী চিকিৎসক" অ্যাকাউন্ট তৈরি করা হয়েছে!\n\nনাম: ${createdRDSuccess.name}\nমোবাইল: ${createdRDSuccess.phone}\nপাসওয়ার্ড: ${createdRDSuccess.pass}\nরেফারেল কোড: ${createdRDSuccess.code}\n\nঅ্যাপ লিঙ্ক: https://nilpha.com`;
+                          navigator.clipboard.writeText(text);
+                          alert('কপি করা হয়েছে!');
+                        }}
+                        className="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-2xl text-[10px] uppercase font-black tracking-wider transition-all"
+                      >
+                        📋 বিবরণী কপি করুন
+                      </button>
+                      <a 
+                        href={`https://wa.me/?text=${encodeURIComponent(`নিলফা (Nilpha) ডিজিটাল মেডিকেল প্ল্যাটফর্মে আপনার "পল্লী চিকিৎসক" অ্যাকাউন্ট তৈরি করা হয়েছে!\n\nনাম: ${createdRDSuccess.name}\nমোবাইল: ${createdRDSuccess.phone}\nপাসওয়ার্ড: ${createdRDSuccess.pass}\nরেফারেল কোড: ${createdRDSuccess.code}\n\nঅ্যাপ লিঙ্ক: https://nilpha.com`)}`}
+                        target="_blank"
+                        referrerPolicy="no-referrer"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3 rounded-2xl text-[10px] uppercase font-black tracking-wider transition-all flex items-center justify-center gap-1"
+                      >
+                        💬 হোয়াটসঅ্যাপ করুন
+                      </a>
+                    </div>
+
+                    <button 
+                      onClick={() => setCreatedRDSuccess(null)}
+                      className="w-full text-center text-[10px] font-black uppercase text-indigo-600 hover:underline pt-2 block"
+                    >
+                      আরেকটি অ্যাকাউন্ট তৈরি করুন
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCreateRuralDoctor} className="space-y-4">
+                    <Input 
+                      label="চিকিৎসকের পূর্ণ নাম (Full Name)" 
+                      placeholder="যেমন: ডাঃ আব্দুর রহমান" 
+                      value={rdName}
+                      onChange={setRdName}
+                      required
+                    />
+
+                    <Input 
+                      label="১১ ডিজিটের মোবাইল নম্বর" 
+                      placeholder="যেমন: 017xxxxxxxx" 
+                      value={rdPhone}
+                      onChange={setRdPhone}
+                      required
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input 
+                        label="লগইন পাসওয়ার্ড (PIN)" 
+                        placeholder="ন্যূনতম ৬ ডিজিট" 
+                        value={rdPass}
+                        onChange={setRdPass}
+                        required
+                      />
+                      <Input 
+                        label="রেফারেল কোড (Unique RD Code)" 
+                        placeholder="যেমন: RD501" 
+                        value={rdCode}
+                        onChange={setRdCode}
+                        required
+                      />
+                    </div>
+
+                    <div className="bg-slate-100 p-3 rounded-2xl text-[10px] text-slate-500 font-bold leading-relaxed border border-slate-200">
+                      💡 **কোড ব্যবহারের নিয়ম**: এই কোডটি ব্যবহার করে রোগীরা স্বয়ংক্রিয়ভাবে অ্যাকাউন্ট খুলতে পারবেন। তাছাড়া পল্লী চিকিৎসক বা এই কোড ব্যবহারকারী রেজিষ্ট্রেশন করলে ওনার প্রোফাইল ও তালিকা আলাদাভাবে ট্র্যাকিং করা যাবে।
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isCreatingRD}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {isCreatingRD ? 'অ্যাকাউন্ট তৈরি হচ্ছে...' : '➕ চিকিৎসকের বিশেষ অ্যাকাউন্ট তৈরি করুন'}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* Right Column: Leaderboard & Stats */}
+              <div className="lg:col-span-7 bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm space-y-4">
+                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">পল্লী চিকিৎসক লিডারবোর্ড ও ট্র্যাকিং</h3>
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Realtime Sync</span>
+                </div>
+
+                {profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-2">
+                    <p className="text-xs font-black uppercase tracking-wider">কোনো পল্লী চিকিৎসক পাওয়া যায়নি</p>
+                    <p className="text-[10px]">বামপাশের ফরম ব্যবহার করে প্রথম পল্লী চিকিৎসকের প্রোফাইল ও কোড তৈরি করুন।</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+                    {profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).map((docInfo, idx) => {
+                      const referredPList = profiles.filter(p => p.referred_by_code === docInfo.referral_code);
+                      const referredAppList = appointments.filter(a => a.referred_by_code === docInfo.referral_code);
+                      
+                      return (
+                        <div key={docInfo.id || idx} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-400">#{idx + 1}</span>
+                              <h4 className="font-extrabold text-sm text-slate-800">{docInfo.full_name}</h4>
+                              <span className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                Code: {docInfo.referral_code}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-semibold mt-1">📱 {docInfo.phone || 'N/A'}</p>
+                          </div>
+                          
+                          {/* Stat chips */}
+                          <div className="flex gap-2">
+                            <div className="bg-slate-50/85 px-4 py-2 rounded-2xl border border-slate-100 min-w-[100px] text-center">
+                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">নিবন্ধিত রোগী</p>
+                              <p className="text-xs font-extrabold text-slate-800 mt-1">{referredPList.length} জন</p>
+                            </div>
+                            <div className="bg-emerald-50/30 px-4 py-2 rounded-2xl border border-emerald-100 min-w-[100px] text-center">
+                              <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none">কোড বুকিং</p>
+                              <p className="text-xs font-extrabold text-emerald-700 mt-1">{referredAppList.length} বার</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+            </div>
           </div>
         )}
       </div>
@@ -851,6 +1160,10 @@ export default function App() {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [allPrescriptions, setAllPrescriptions] = useState<Prescription[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [allAppointments, setAllAppointments] = useState<any[]>([]);
+  const [userAppointments, setUserAppointments] = useState<any[]>([]);
+  const [referredPatients, setReferredPatients] = useState<any[]>([]);
+  const [isRegisteringPatientByDoc, setIsRegisteringPatientByDoc] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [hospitals, setHospitals] = useState<Clinic[]>([]);
   const [labTests, setLabTests] = useState<LabTest[]>([]);
@@ -1151,10 +1464,12 @@ export default function App() {
       const profRes = await getDocs(query(collection(db, 'profiles'), orderBy('full_name', 'asc'))); // Sorting by full_name instead of missing 'id' field
       const presRes = await getDocs(query(collection(db, 'prescriptions'), orderBy('created_at', 'desc')));
       const ordRes = await getDocs(query(collection(db, 'orders'), orderBy('created_at', 'desc')));
+      const appRes = await getDocs(query(collection(db, 'appointments'), orderBy('created_at', 'desc')));
       
       setAllProfiles(profRes.docs.map(d => ({ ...d.data() } as Profile)));
       setAllPrescriptions(presRes.docs.map(d => ({ id: d.id, ...d.data() } as Prescription)));
       setAllOrders(ordRes.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+      setAllAppointments(appRes.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (error) {
       console.error("Admin fetch error:", error);
     }
@@ -1181,6 +1496,25 @@ export default function App() {
       
       setAllPrescriptions(presSnap.docs.map(d => ({ id: d.id, ...d.data() } as Prescription)));
       setAllOrders(ordSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+
+      // Fetch appointments
+      const appQuery = query(
+        collection(db, 'appointments'),
+        where('patient_id', '==', user.uid || user.id),
+        orderBy('created_at', 'desc')
+      );
+      const appSnap = await getDocs(appQuery);
+      setUserAppointments(appSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // Fetch referred patients for rural doctors
+      if (profile.role === UserRole.RURAL_DOCTOR && profile.referral_code) {
+        const refQuery = query(
+          collection(db, 'profiles'),
+          where('referred_by_code', '==', profile.referral_code.trim().toUpperCase())
+        );
+        const refSnap = await getDocs(refQuery);
+        setReferredPatients(refSnap.docs.map(d => d.data() as Profile));
+      }
     } catch (error) {
       console.error("User data fetch error:", error);
     }
@@ -1190,7 +1524,11 @@ export default function App() {
     e.preventDefault();
     setIsProcessing(true);
     const formData = new FormData(e.currentTarget);
-    const emailVal = (formData.get('email') as string).trim();
+    const rawEmail = (formData.get('email') as string || '').trim();
+    let emailVal = rawEmail;
+    if (rawEmail && !rawEmail.includes('@') && rawEmail.match(/^\d{11}$/)) {
+      emailVal = `${rawEmail}@nilpha.com`;
+    }
     const passVal = formData.get('password') as string;
 
     try {
@@ -1265,9 +1603,23 @@ export default function App() {
       } else {
         const fullName = formData.get('fullName') as string;
         const phone = formData.get('phone') as string;
+        const isRuralDocChecked = formData.get('isRuralDoctor') === 'on';
         
         if (!fullName || !phone || !emailVal || !passVal) {
           throw new Error('দয়া করে সব তথ্য পূরণ করুন!');
+        }
+
+        let docCode = '';
+        if (isRuralDocChecked) {
+          const ruralDoctorCode = (formData.get('ruralDoctorCode') as string || '').trim().toUpperCase();
+          const representativePin = (formData.get('representativePin') as string || '').trim();
+          if (!ruralDoctorCode || !representativePin) {
+            throw new Error('পল্লী চিকিৎসক কোড এবং প্রতিনিধি পিন আবশ্যক!');
+          }
+          if (representativePin !== '1971' && representativePin !== 'nilpha2026' && representativePin !== '5560') {
+            throw new Error('ভুল প্রতিনিধি পিন! শুধুমাত্র আমাদের অনুমোদিত প্রতিনিধি বা এডমিন এই অ্যাকাউন্ট খুলতে পারেন।');
+          }
+          docCode = ruralDoctorCode;
         }
         
         const userCredential = await createUserWithEmailAndPassword(auth, emailVal, passVal);
@@ -1279,9 +1631,18 @@ export default function App() {
           id: firebaseUser.uid, 
           full_name: fullName, 
           phone, 
-          role: UserRole.PATIENT, 
+          role: isRuralDocChecked ? UserRole.RURAL_DOCTOR : UserRole.PATIENT, 
           status: 'active' 
         };
+
+        if (isRuralDocChecked) {
+          newProf.referral_code = docCode;
+        } else {
+          const referredByCode = (formData.get('referredByCode') as string || '').trim().toUpperCase();
+          if (referredByCode) {
+            newProf.referred_by_code = referredByCode;
+          }
+        }
         
         await setDoc(doc(db, 'profiles', firebaseUser.uid), newProf);
         
@@ -1292,8 +1653,8 @@ export default function App() {
     } catch (err: any) { 
       console.error("Auth Error Detail:", err);
       let msg = 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = 'ভুল ইমেইল বা পাসওয়ার্ড!';
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
+        msg = 'ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড!';
       } else if (err.message) {
         msg = `এরর: ${err.message}`;
       }
@@ -1747,7 +2108,7 @@ export default function App() {
         {/* Main App Experience */}
         <Route path="*" element={
           isAdmin ? (
-            <AdminDashboard 
+             <AdminDashboard 
               profile={profile!} 
               onLogout={logout} 
               ticker={tickerMessage} 
@@ -1757,6 +2118,8 @@ export default function App() {
               hospitals={hospitals}
               labTests={labTests}
               orders={allOrders}
+              profiles={allProfiles}
+              appointments={allAppointments}
               onAdd={(type) => {
                 setAdminDataTab(type === 'doctor' ? 'doctors' : type === 'hospital' ? 'hospitals' : 'tests');
                 setEditingItem({});
@@ -1770,6 +2133,7 @@ export default function App() {
                 setShowAddModal(true);
               }}
               onDelete={handleDeleteData}
+              onRefreshAdminData={fetchAdminData}
             />
           ) : (
             <>
@@ -2060,18 +2424,109 @@ export default function App() {
                 )}
 
                 {activeTab === 'profile' && (
-                  <div className="animate-in slide-in-from-bottom-5">
+                  <div className="animate-in slide-in-from-bottom-5 space-y-6">
                     {/* Simplified Profile View */}
-                    <Card className="flex items-center gap-5 py-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-none">
+                    <Card className="flex items-center gap-5 py-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-none text-left">
                        <div className="w-16 h-16 bg-blue-600 rounded-[22px] flex items-center justify-center text-white text-3xl font-black">
                          {profile?.full_name?.[0] || '👤'}
                        </div>
                        <div>
                           <h4 className="font-black text-xl text-slate-800 tracking-tight">{profile?.full_name}</h4>
-                          <p className="text-[10px] text-blue-600 uppercase font-black tracking-widest opacity-60">{profile?.role}</p>
+                          <p className="text-[10px] text-blue-600 uppercase font-black tracking-widest opacity-60">
+                            {profile?.role === UserRole.RURAL_DOCTOR ? 'পল্লী চিকিৎসক (Rural Doctor)' : profile?.role || 'পেশেন্ট'}
+                          </p>
+                          {profile?.phone && <p className="text-[11px] text-slate-500 font-bold mt-1">📱 {profile.phone}</p>}
                        </div>
                     </Card>
-                    <div className="space-y-4 pt-6">
+
+                    {/* Rural Doctor Section */}
+                    {profile?.role === UserRole.RURAL_DOCTOR && (
+                      <div className="space-y-6 text-left">
+                        {/* Stats cards Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-5 rounded-[24px]">
+                            <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider mb-1">রেফারেল কোড</p>
+                            <p className="text-lg font-black text-blue-900 tracking-wider uppercase">{profile.referral_code}</p>
+                          </div>
+                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-5 rounded-[24px]">
+                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider mb-1">নিবন্ধিত রোগী</p>
+                            <p className="text-lg font-black text-emerald-950">{referredPatients.length} জন</p>
+                          </div>
+                        </div>
+
+                        {/* Register patient button triggers logout & register prefills */}
+                        <button 
+                          onClick={async () => {
+                            const rCode = profile.referral_code;
+                            await logout();
+                            setAuthMode('register');
+                            localStorage.setItem('prefilled_referral_code', rCode);
+                            setShowAuthModal(true);
+                          }}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-3xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2 active:scale-95 transition-all text-center"
+                        >
+                          ➕ নতুন রোগী রেজিষ্ট্রেশন করুন
+                        </button>
+
+                        {/* Registered Patients List */}
+                        <div className="space-y-4">
+                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-extrabold">আপনার নিবন্ধিত রোগী তালিকা ({referredPatients.length})</h3>
+                          {referredPatients.length === 0 ? (
+                            <p className="text-[10px] text-slate-400 font-extrabold uppercase italic">আপনার কোড ব্যবহার করে রেজিষ্ট্রেশন করা রোগীর সংখ্যা শূন্য।</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {referredPatients.map((p, idx) => (
+                                <Card key={p.id || idx} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
+                                  <div>
+                                    <h4 className="font-extrabold text-[13px] text-slate-800">{p.full_name}</h4>
+                                    <p className="text-[10px] text-slate-500 font-bold">{p.phone}</p>
+                                  </div>
+                                  <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 uppercase px-2 py-1 rounded-xl">
+                                    নথিভূক্ত
+                                  </span>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Patient Appointments History Section */}
+                    {profile?.role === UserRole.PATIENT && (
+                      <div className="space-y-4 text-left">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-extrabold">আপনার বুক করা অ্যাপয়েন্টমেন্টসমূহ ({userAppointments.length})</h3>
+                        {userAppointments.length === 0 ? (
+                          <div className="bg-white p-8 rounded-[32px] border border-slate-100 text-center space-y-2">
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-relaxed">কোনো অ্যাপয়েন্টমেন্ট হিস্ট্রি নেই</p>
+                            <p className="text-[9px] text-slate-400 max-w-xs mx-auto">ডাক্তারের তালিকা থেকে সিরিয়াল দিলে তার ইতিহাস এখানে দেখতে পাবেন।</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {userAppointments.map((app) => (
+                              <Card key={app.id} className="border-l-4 border-l-emerald-500 bg-white p-5 rounded-3xl space-y-3 text-left shadow-sm">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-extrabold text-sm text-slate-800 leading-tight">{app.doctor_name}</h4>
+                                    <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">{app.doctor_specialty}</p>
+                                  </div>
+                                  <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-xl uppercase tracking-wider">
+                                    {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] font-bold text-slate-500 space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                   <p>📅 তারিখ: {app.date}</p>
+                                   <p>👤 রোগী: {app.patient_name} ({app.patient_phone})</p>
+                                   {app.problems && <p>🩺 সমস্যা: {app.problems}</p>}
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="space-y-4 pt-4">
                       <Button onClick={handleShare} variant="primary" className="w-full py-4 rounded-[28px]"><Share2 size={20} /> Share Nilpha</Button>
                       <Button onClick={logout} variant="secondary" className="w-full py-4 rounded-[28px] text-red-500">Logout</Button>
                     </div>

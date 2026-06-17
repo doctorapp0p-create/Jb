@@ -3,7 +3,8 @@ export enum UserRole {
   PATIENT = 'PATIENT',
   DOCTOR = 'DOCTOR',
   ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR'
+  MODERATOR = 'MODERATOR',
+  RURAL_DOCTOR = 'RURAL_DOCTOR'
 }
 
 export interface Profile {
@@ -12,6 +13,8 @@ export interface Profile {
   phone?: string;
   role: UserRole;
   status: 'active' | 'pending' | 'suspended';
+  referral_code?: string;
+  referred_by_code?: string;
 }
 
 export interface AppSetting {

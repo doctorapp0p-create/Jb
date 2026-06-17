@@ -8,8 +8,10 @@
         "id": { "type": "string" },
         "full_name": { "type": "string" },
         "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["PATIENT", "DOCTOR", "ADMIN"] },
-        "status": { "type": "string", "enum": ["active", "pending", "suspended"] }
+        "role": { "type": "string", "enum": ["PATIENT", "DOCTOR", "ADMIN", "RURAL_DOCTOR"] },
+        "status": { "type": "string", "enum": ["active", "pending", "suspended"] },
+        "referral_code": { "type": "string" },
+        "referred_by_code": { "type": "string" }
       },
       "required": ["id", "full_name", "role", "status"]
     },
@@ -108,6 +110,25 @@
         "value": { "type": "string" }
       },
       "required": ["key", "value"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Doctor appointments history log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "patient_id": { "type": "string" },
+        "patient_name": { "type": "string" },
+        "patient_phone": { "type": "string" },
+        "doctor_id": { "type": "string" },
+        "doctor_name": { "type": "string" },
+        "doctor_specialty": { "type": "string" },
+        "date": { "type": "string" },
+        "problems": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "referred_by_code": { "type": "string" }
+      },
+      "required": ["id", "patient_id", "patient_name", "doctor_name", "date"]
     }
   },
   "firestore": {
@@ -138,6 +159,10 @@
     "/settings/{settingId}": {
       "schema": "Setting",
       "description": "Global app settings"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Doctor appointments"
     }
   }
 }
