@@ -53,6 +53,87 @@ export const Breadcrumbs: React.FC<{ items: { label: string, link?: string }[] }
   </nav>
 );
 
+// --- Helpers ---
+const checkDay = (docSchedule: string, day: string) => {
+  const s = (docSchedule || '')
+    .toLowerCase()
+    .replace(/[\u2013\u2014-]/g, '-')
+    .replace(/\s+/g, '')
+    .replace(/থেকে/g, '-');
+
+  const searchDay = day.toLowerCase();
+
+  const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+  const dayOrderListFull = ['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'];
+
+  let searchIdx = -1;
+  dayOrderListFull.forEach((dName, idx) => {
+    if (searchDay.includes(dName) || searchDay.includes(dayOrderList[idx])) {
+      searchIdx = idx;
+    }
+  });
+
+  if (searchIdx === -1) return false;
+
+  const searchShort = dayOrderList[searchIdx];
+  const activeDays = new Set<string>();
+
+  // 1. Check for Daily or Always Open
+  if (s.includes('প্রতিদিন') || s.includes('সবদিন') || s === 'প্রতিদিন' || s === '') {
+    dayOrderList.forEach(d => activeDays.add(d));
+  }
+
+  // 2. Check for Ranges
+  let rangeMatch;
+  const rangeRegex = new RegExp('(শনিবার|রবিবার|সোমবার|মঙ্গলবার|বুধবার|বৃহস্পতিবার|শুক্রবার|শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)-(শনিবার|রবিবার|সোমবার|মঙ্গলবার|বুধবার|বৃহস্পতিবার|শুক্রবার|শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)', 'g');
+  while ((rangeMatch = rangeRegex.exec(s)) !== null) {
+    const startDay = rangeMatch[1];
+    const endDay = rangeMatch[2];
+    
+    let startIdx = -1;
+    let endIdx = -1;
+    
+    for (let i = 0; i < 7; i++) {
+      if (startDay === dayOrderList[i] || startDay === dayOrderListFull[i]) {
+        startIdx = i;
+      }
+      if (endDay === dayOrderList[i] || endDay === dayOrderListFull[i]) {
+        endIdx = i;
+      }
+    }
+
+    if (startIdx !== -1 && endIdx !== -1) {
+      let idx = startIdx;
+      while (true) {
+        activeDays.add(dayOrderList[idx]);
+        if (idx === endIdx) break;
+        idx = (idx + 1) % 7;
+      }
+    }
+  }
+
+  // 3. Check for individual mentioned days
+  dayOrderList.forEach((dName, idx) => {
+    const fullName = dayOrderListFull[idx];
+    if (s.includes(fullName) || s.includes(dName)) {
+      activeDays.add(dName);
+    }
+  });
+
+  // 4. Handle Friday Closed
+  const isFridayClosed = s.includes('শুক্র') && (s.includes('বন্ধ') || s.includes('অফ') || s.includes('close'));
+  if (isFridayClosed) {
+    activeDays.delete('শুক্র');
+  }
+
+  // 5. Default fallback
+  if (activeDays.size === 0) {
+    return true;
+  }
+
+  return activeDays.has(searchShort);
+};
+
 // --- Doctor Profile Page ---
 export const DoctorProfilePage: React.FC = () => {
   const { slug } = useParams();
@@ -245,8 +326,8 @@ export const DoctorProfilePage: React.FC = () => {
           </h2>
           <div className="flex flex-wrap gap-2">
              {['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'].map(day => {
-               const dayShort = day === 'শনিবার' ? 'Sat' : day === 'রবিবার' ? 'Sun' : day === 'সোমবার' ? 'Mon' : day === 'মঙ্গলবার' ? 'Tue' : day === 'বুধবার' ? 'Wed' : day === 'বৃহস্পতিবার' ? 'Thu' : 'Fri';
-               const isAvailable = doctor.schedule.includes(dayShort);
+               // Check availability based on Bengali weekday names
+               const isAvailable = checkDay(doctor.schedule, day);
                return (
                   <div key={day} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight border-2 transition-all ${isAvailable ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' : 'bg-slate-50 text-slate-300 border-slate-50 opacity-50'}`}>
                      {day}

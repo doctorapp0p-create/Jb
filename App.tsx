@@ -1813,15 +1813,20 @@ export default function App() {
     const todayBn = bnDayNames[new Date().getDay()];
     
     const checkDay = (docSchedule: string, day: string) => {
-      const s = (docSchedule || '').replace(/–/g, '-').replace(/থেকে/g, '-').replace(/\s/g, '').toLowerCase();
+      const s = (docSchedule || '')
+        .toLowerCase()
+        .replace(/[\u2013\u2014-]/g, '-')
+        .replace(/\s+/g, '')
+        .replace(/থেকে/g, '-');
+
       const searchDay = day.toLowerCase();
 
       const dayOrderList = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র'];
+      const dayOrderListFull = ['শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার'];
 
-      // Find search day index
       let searchIdx = -1;
-      dayOrderList.forEach((dName, idx) => {
-        if (searchDay.includes(dName)) {
+      dayOrderListFull.forEach((dName, idx) => {
+        if (searchDay.includes(dName) || searchDay.includes(dayOrderList[idx])) {
           searchIdx = idx;
         }
       });
@@ -1836,13 +1841,24 @@ export default function App() {
         dayOrderList.forEach(d => activeDays.add(d));
       }
 
-      // 2. Check for Ranges like শনি-বৃহস্পতি or রবি-বুধবার or শনি-বুধ
-      const rangeMatch = s.match(/(শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)-(শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)/);
-      if (rangeMatch) {
+      // 2. Check for Ranges like শনি-বৃহস্পতি or শনিবার-বৃহস্পতিবার
+      let rangeMatch;
+      const rangeRegex = new RegExp('(শনিবার|রবিবার|সোমবার|মঙ্গলবার|বুধবার|বৃহস্পতিবার|শুক্রবার|শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)-(শনিবার|রবিবার|সোমবার|মঙ্গলবার|বুধবার|বৃহস্পতিবার|শুক্রবার|শনি|রবি|সোম|মঙ্গল|বুধ|বৃহস্পতি|শুক্র)', 'g');
+      while ((rangeMatch = rangeRegex.exec(s)) !== null) {
         const startDay = rangeMatch[1];
         const endDay = rangeMatch[2];
-        const startIdx = dayOrderList.indexOf(startDay);
-        const endIdx = dayOrderList.indexOf(endDay);
+        
+        let startIdx = -1;
+        let endIdx = -1;
+        
+        for (let i = 0; i < 7; i++) {
+          if (startDay === dayOrderList[i] || startDay === dayOrderListFull[i]) {
+            startIdx = i;
+          }
+          if (endDay === dayOrderList[i] || endDay === dayOrderListFull[i]) {
+            endIdx = i;
+          }
+        }
 
         if (startIdx !== -1 && endIdx !== -1) {
           let idx = startIdx;
@@ -1854,20 +1870,21 @@ export default function App() {
         }
       }
 
-      // 3. Check for individual mentioned days (e.g., রবি, সোম ও বুধ)
-      dayOrderList.forEach(dName => {
-        if (s.includes(dName)) {
+      // 3. Check for individual mentioned days
+      dayOrderList.forEach((dName, idx) => {
+        const fullName = dayOrderListFull[idx];
+        if (s.includes(fullName) || s.includes(dName)) {
           activeDays.add(dName);
         }
       });
 
-      // 4. Handle Friday Closed or other exclusions (e.g. (শুক্রবার বন্ধ) or শুক্র বন্ধ)
+      // 4. Handle Friday Closed or other exclusions
       const isFridayClosed = s.includes('শুক্র') && (s.includes('বন্ধ') || s.includes('অফ') || s.includes('close'));
       if (isFridayClosed) {
         activeDays.delete('শুক্র');
       }
 
-      // 5. If no specific weekdays mapped, defaults to always visible (e.g. "যোগাযোগ করুন")
+      // 5. If no specific weekdays mapped, defaults to always visible
       if (activeDays.size === 0) {
         return true;
       }
@@ -2349,7 +2366,10 @@ export default function App() {
                                       <div className="pt-2 border-t border-slate-50 mt-2 space-y-1.5">
                                          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 uppercase">
                                             <MapPin size={10} className="text-blue-500" />
-                                            {CLINICS.find(c => c.id === d.clinics[0])?.name || 'চেম্বার'}
+                                            {selectedHospitalId 
+                                               ? (CLINICS.find(c => c.id === selectedHospitalId)?.name || 'চেম্বার')
+                                               : (d.clinics.map(cid => CLINICS.find(c => c.id === cid)?.name).filter(Boolean).join(' • ') || 'চেম্বার')
+                                            }
                                          </div>
                                          <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-500 uppercase">
                                             <Clock size={10} />
