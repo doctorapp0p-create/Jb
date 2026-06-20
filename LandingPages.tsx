@@ -58,8 +58,9 @@ const checkDay = (docSchedule: string, day: string) => {
   const s = (docSchedule || '')
     .toLowerCase()
     .replace(/[\u2013\u2014-]/g, '-')
-    .replace(/\s+/g, '')
-    .replace(/থেকে/g, '-');
+    .replace(/থেকে/g, '-')
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, ' ');
 
   const searchDay = day.toLowerCase();
 
