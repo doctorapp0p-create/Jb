@@ -51,10 +51,12 @@ service cloud.firestore {
       
       allow list: if isAdmin();
       
-      allow create: if isSignedIn() && request.auth.uid == userId && (
-        (incoming().get('role', '') == 'PATIENT' && incoming().get('status', '') == 'active') ||
-        (incoming().get('role', '') == 'RURAL_DOCTOR' && incoming().get('status', '') == 'active') ||
-        (isAdmin() && incoming().get('role', '') == 'ADMIN' && incoming().get('status', '') == 'active')
+      allow create: if isSignedIn() && (
+        (request.auth.uid == userId && (
+          (incoming().get('role', '') == 'PATIENT' && incoming().get('status', '') == 'active') ||
+          (incoming().get('role', '') == 'RURAL_DOCTOR' && incoming().get('status', '') == 'active')
+        )) ||
+        isAdmin()
       );
       
       allow update: if isSignedIn() && (
