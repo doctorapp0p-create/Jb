@@ -14,6 +14,15 @@ export const slugify = (text: string): string => {
 export const toVirtualEmail = (text: string): string => {
   if (!text) return "";
   const trimmed = text.trim();
+  
+  // Map admin username to their actual Firebase login email
+  if (trimmed.toLowerCase() === 'doctorapp0p' || trimmed.toLowerCase() === 'doctorapp0p@gmail.com') {
+    return 'doctorapp0p@gmail.com';
+  }
+  if (trimmed.toLowerCase() === 'moderator' || trimmed.toLowerCase() === 'modaretor' || trimmed.toLowerCase() === 'moderator@nilpha.com' || trimmed.toLowerCase() === 'modaretor@nilpha.com') {
+    return 'moderator@nilpha.com';
+  }
+  
   if (trimmed.includes('@')) return trimmed;
   // Convert spaces and special characters to make a valid virtual email
   const cleaned = trimmed

@@ -1569,7 +1569,13 @@ export default function App() {
 
     try {
       if (authMode === 'moderator') {
-        if ((emailVal === 'moderator' || emailVal === 'modaretor') && passVal === 'jagad01750') {
+        const isModUser = emailVal === 'moderator' || 
+                          emailVal === 'modaretor' || 
+                          emailVal === 'moderator@nilpha.com' || 
+                          emailVal === 'modaretor@nilpha.com' ||
+                          rawEmail.toLowerCase() === 'moderator' ||
+                          rawEmail.toLowerCase() === 'modaretor';
+        if (isModUser && passVal === 'jagad01750') {
           const modEmail = 'moderator@nilpha.com';
           const modPass = 'jagad01750';
           let firebaseUser;
