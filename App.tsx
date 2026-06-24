@@ -773,8 +773,9 @@ const AdminDashboard: React.FC<{
                                   Code: {docInfo.referral_code}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-500 font-semibold mt-1">📱 {docInfo.phone || 'N/A'}</p>
-                              <p className="text-[9px] text-blue-600 font-bold mt-1 uppercase tracking-wider">
+                              <p className="text-[10px] text-slate-500 font-bold mt-1">📱 ইউজারনেম: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{docInfo.phone || 'N/A'}</span></p>
+                              <p className="text-[10px] text-indigo-600 font-bold mt-1">🔑 পাসওয়ার্ড: <span className="font-mono bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700">{docInfo.created_password || 'N/A'}</span></p>
+                              <p className="text-[9px] text-blue-600 font-black mt-2 uppercase tracking-wider">
                                 {isExpanded ? '▲ তালিকা বন্ধ করুন' : '▼ নিবন্ধিত রোগী দেখতে ক্লিক করুন'}
                               </p>
                             </div>
