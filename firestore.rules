@@ -21,8 +21,10 @@ service cloud.firestore {
     
     function isAdmin() { 
       return isSignedIn() && (
-        request.auth.token.get('email', '') == 'doctorapp0p@gmail.com' || 
-        request.auth.token.get('email', '') == 'moderator@nilpha.com'
+        request.auth.token.email == 'doctorapp0p@gmail.com' || 
+        request.auth.token.email == 'moderator@nilpha.com' ||
+        (exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('role', '') == 'ADMIN')
       ); 
     }
     function isDoctor() { return hasRole('DOCTOR'); }
