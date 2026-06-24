@@ -15,6 +15,7 @@ export interface Profile {
   status: 'active' | 'pending' | 'suspended';
   referral_code?: string;
   referred_by_code?: string;
+  created_password?: string;
 }
 
 export interface AppSetting {

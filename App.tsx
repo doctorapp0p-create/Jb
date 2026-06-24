@@ -4,7 +4,7 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth as getTempAuth, signOut as signTempOut } from 'firebase/auth';
 import { UserRole, Doctor, Clinic, Medicine, Order, Profile, Prescription, LabTest } from './types';
 import { DOCTORS, CLINICS, MEDICINES, EMERGENCY_SERVICES, DISTRICTS, LAB_TESTS, SPECIALTIES } from './constants';
-import { slugify } from './utils';
+import { slugify, toVirtualEmail } from './utils';
 import { gemini } from './services/geminiService';
 import { auth, db } from './services/firebase';
 import { 
@@ -269,6 +269,7 @@ const AdminDashboard: React.FC<{
 }> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, profiles, appointments, onAdd, onEdit, onDelete, onRefreshAdminData }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing' | 'referrals'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
 
   // States for Admin's Rural Doctor Registration Engine
   const [rdName, setRdName] = useState('');
@@ -350,7 +351,8 @@ const AdminDashboard: React.FC<{
         phone: phone,
         role: UserRole.RURAL_DOCTOR,
         status: 'active',
-        referral_code: code
+        referral_code: code,
+        created_password: pass
       };
 
       await setDoc(doc(db, 'profiles', userId), newRCProfile);
@@ -755,31 +757,68 @@ const AdminDashboard: React.FC<{
                     {profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).map((docInfo, idx) => {
                       const referredPList = profiles.filter(p => p.referred_by_code === docInfo.referral_code);
                       const referredAppList = appointments.filter(a => a.referred_by_code === docInfo.referral_code);
+                      const isExpanded = expandedDocId === docInfo.id;
                       
                       return (
-                        <div key={docInfo.id || idx} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-slate-400">#{idx + 1}</span>
-                              <h4 className="font-extrabold text-sm text-slate-800">{docInfo.full_name}</h4>
-                              <span className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                Code: {docInfo.referral_code}
-                              </span>
+                        <div key={docInfo.id || idx} className="py-4 border-b border-slate-50 last:border-none">
+                          <div 
+                            onClick={() => setExpandedDocId(isExpanded ? null : docInfo.id)}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 p-2 rounded-2xl transition-all"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-400">#{idx + 1}</span>
+                                <h4 className="font-extrabold text-sm text-slate-800">{docInfo.full_name}</h4>
+                                <span className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                  Code: {docInfo.referral_code}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-semibold mt-1">📱 {docInfo.phone || 'N/A'}</p>
+                              <p className="text-[9px] text-blue-600 font-bold mt-1 uppercase tracking-wider">
+                                {isExpanded ? '▲ তালিকা বন্ধ করুন' : '▼ নিবন্ধিত রোগী দেখতে ক্লিক করুন'}
+                              </p>
                             </div>
-                            <p className="text-[10px] text-slate-500 font-semibold mt-1">📱 {docInfo.phone || 'N/A'}</p>
+                            
+                            {/* Stat chips */}
+                            <div className="flex gap-2">
+                              <div className="bg-slate-50/85 px-4 py-2 rounded-2xl border border-slate-100 min-w-[100px] text-center">
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">নিবন্ধিত রোগী</p>
+                                <p className="text-xs font-extrabold text-slate-800 mt-1">{referredPList.length} জন</p>
+                              </div>
+                              <div className="bg-emerald-50/30 px-4 py-2 rounded-2xl border border-emerald-100 min-w-[100px] text-center">
+                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none">কোড বুকিং</p>
+                                <p className="text-xs font-extrabold text-emerald-700 mt-1">{referredAppList.length} বার</p>
+                              </div>
+                            </div>
                           </div>
-                          
-                          {/* Stat chips */}
-                          <div className="flex gap-2">
-                            <div className="bg-slate-50/85 px-4 py-2 rounded-2xl border border-slate-100 min-w-[100px] text-center">
-                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">নিবন্ধিত রোগী</p>
-                              <p className="text-xs font-extrabold text-slate-800 mt-1">{referredPList.length} জন</p>
+
+                          {/* Expanded Patient Referral List */}
+                          {isExpanded && (
+                            <div className="mt-3 ml-6 p-4 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-3">
+                              <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-wider text-left">
+                                📋 {docInfo.full_name}-এর মাধ্যমে নিবন্ধিত রোগী তালিকা ({referredPList.length})
+                              </h5>
+                              {referredPList.length === 0 ? (
+                                <p className="text-[10px] text-slate-400 italic font-semibold text-left">কোনো নিবন্ধিত রোগী নেই</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {referredPList.map((pat, pidx) => (
+                                    <div key={pat.id || pidx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center text-left">
+                                      <div>
+                                        <p className="font-extrabold text-xs text-slate-800">{pat.full_name}</p>
+                                        <p className="text-[9px] text-slate-500 font-semibold mt-0.5">📱 {pat.phone || 'N/A'}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[9px] font-bold text-indigo-600">
+                                          🔑 পাসওয়ার্ড: <span className="font-mono bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700">{pat.created_password || pat.password || '123456'}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <div className="bg-emerald-50/30 px-4 py-2 rounded-2xl border border-emerald-100 min-w-[100px] text-center">
-                              <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none">কোড বুকিং</p>
-                              <p className="text-xs font-extrabold text-emerald-700 mt-1">{referredAppList.length} বার</p>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1525,10 +1564,7 @@ export default function App() {
     setIsProcessing(true);
     const formData = new FormData(e.currentTarget);
     const rawEmail = (formData.get('email') as string || '').trim();
-    let emailVal = rawEmail;
-    if (rawEmail && !rawEmail.includes('@') && rawEmail.match(/^\d{11}$/)) {
-      emailVal = `${rawEmail}@nilpha.com`;
-    }
+    const emailVal = toVirtualEmail(rawEmail);
     const passVal = formData.get('password') as string;
 
     try {
@@ -1632,7 +1668,8 @@ export default function App() {
           full_name: fullName, 
           phone, 
           role: isRuralDocChecked ? UserRole.RURAL_DOCTOR : UserRole.PATIENT, 
-          status: 'active' 
+          status: 'active',
+          created_password: passVal
         };
 
         if (isRuralDocChecked) {
@@ -2500,7 +2537,10 @@ export default function App() {
                                 <Card key={p.id || idx} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
                                   <div>
                                     <h4 className="font-extrabold text-[13px] text-slate-800">{p.full_name}</h4>
-                                    <p className="text-[10px] text-slate-500 font-bold">{p.phone}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold">📱 {p.phone}</p>
+                                    {p.created_password && (
+                                      <p className="text-[10px] text-indigo-600 font-bold mt-1">🔑 পাসওয়ার্ড: <span className="font-mono bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700">{p.created_password}</span></p>
+                                    )}
                                   </div>
                                   <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 uppercase px-2 py-1 rounded-xl">
                                     নথিভূক্ত

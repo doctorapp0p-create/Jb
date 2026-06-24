@@ -10,3 +10,18 @@ export const slugify = (text: string): string => {
     .replace(/^-+/, '')        // Trim - from start of text
     .replace(/-+$/, '');       // Trim - from end of text
 };
+
+export const toVirtualEmail = (text: string): string => {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed.includes('@')) return trimmed;
+  // Convert spaces and special characters to make a valid virtual email
+  const cleaned = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{M}\p{N}-]+/gu, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+  return `${cleaned}@nilpha.com`;
+};

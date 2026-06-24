@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, User, Phone, LogIn, UserPlus, ShieldAlert, Chrome } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, LogIn, UserPlus, ShieldAlert, Chrome, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isProcessing
 }) => {
   const [isRuralDoctor, setIsRuralDoctor] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   if (!isOpen) return null;
 
@@ -175,14 +176,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-1">
-                {authMode === 'moderator' ? 'মডারেটর ইউজারনেম' : 'ইমেইল এড্রেস'}
+                {authMode === 'moderator' ? 'মডারেটর ইউজারনেম' : 'ইউজারনেম বা ইমেইল এড্রেস'}
               </label>
               <div className="relative">
                 <input
                   name="email"
-                  type={authMode === 'moderator' ? 'text' : 'email'}
+                  type="text"
                   required
-                  placeholder={authMode === 'moderator' ? 'ইউজারনেম দিন...' : 'যেমন: info@nilpha.com'}
+                  placeholder={authMode === 'moderator' ? 'ইউজারনেম দিন...' : 'যেমন: sabir বা info@nilpha.com'}
                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
                 />
                 {authMode === 'moderator' ? (
@@ -198,12 +199,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="relative">
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 pr-12 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-850 h-[48px]"
                 />
                 <Lock size={14} className="text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-all cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MessageSquare, User, Calendar, MapPin, Phone, Activity, ArrowRight, Lock, Mail, ShieldAlert } from 'lucide-react';
+import { X, MessageSquare, User, Calendar, MapPin, Phone, Activity, ArrowRight, Lock, Mail, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../../services/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { toVirtualEmail } from '../../utils';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
   // Auth Form State
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [authForm, setAuthForm] = useState({
     fullName: '',
     phone: '',
@@ -138,10 +140,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
 
     try {
       const emailRaw = authForm.emailOrPhone.trim();
-      let emailVal = emailRaw;
-      if (emailRaw && !emailRaw.includes('@') && emailRaw.match(/^\d{11}$/)) {
-        emailVal = `${emailRaw}@nilpha.com`;
-      }
+      const emailVal = toVirtualEmail(emailRaw);
 
       if (authTab === 'login') {
         if (!emailVal || !authForm.password) {
@@ -347,12 +346,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">মোবাইল নাম্বার অথবা ইমেইল</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">ইউজারনেম, মোবাইল বা ইমেইল</label>
                     <div className="relative">
                       <input 
                         required
                         type="text"
-                        placeholder={authTab === 'register' ? "যেমন: ০১৭xxxxxxxxx বা email@example.com" : "মোবাইল বা ইমেইল লিখুন"}
+                        placeholder={authTab === 'register' ? "যেমন: sabir, ০১৭xxxxxxxxx বা email@example.com" : "ইউজারনেম, মোবাইল বা ইমেইল লিখুন"}
                         value={authForm.emailOrPhone}
                         onChange={e => setAuthForm({...authForm, emailOrPhone: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
@@ -366,13 +365,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
                     <div className="relative">
                       <input 
                         required
-                        type="password" 
+                        type={showPassword ? "text" : "password"} 
                         placeholder="••••••••"
                         value={authForm.password}
                         onChange={e => setAuthForm({...authForm, password: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 pl-11 pr-12 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       />
                       <Lock size={14} className="text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-all cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                     </div>
                   </div>
 
