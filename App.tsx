@@ -38,7 +38,7 @@ import { BookingModal } from './src/components/BookingModal';
 import { SecurityGuard, sanitizeInput } from './src/components/SecurityGuard';
 import { AdminLabBillBuilder } from './src/components/AdminLabBillBuilder';
 import { AuthModal } from './src/components/AuthModal';
-import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText, Youtube } from 'lucide-react';
+import { Share2, Bot, Video, Microscope, Ambulance, Star, ShieldCheck, Zap, MessageSquare, ArrowRight, X, Download, Smartphone, Stethoscope, Percent, MapPin, Calendar, Clock, Phone, BadgeCheck, Search, ChevronRight, FileText, Youtube, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // --- UI Components ---
@@ -265,11 +265,17 @@ const AdminDashboard: React.FC<{
   onAdd: (type: 'doctor' | 'hospital' | 'lab_test') => void,
   onEdit: (type: 'doctor' | 'hospital' | 'lab_test', item: any) => void,
   onDelete: (type: 'doctor' | 'hospital' | 'lab_test', id: string) => void,
-  onRefreshAdminData?: () => Promise<void>
-}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, profiles, appointments, onAdd, onEdit, onDelete, onRefreshAdminData }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing' | 'referrals'>('overview');
+  onRefreshAdminData?: () => Promise<void>,
+  onUpdateAppointmentStatus?: (appId: string, status: 'pending' | 'visited' | 'absent') => Promise<void>
+}> = ({ profile, onLogout, ticker, setTicker, onUpdateTicker, doctors, hospitals, labTests, orders, profiles, appointments, onAdd, onEdit, onDelete, onRefreshAdminData, onUpdateAppointmentStatus }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'doctors' | 'orders' | 'hospitals' | 'labtests' | 'billing' | 'referrals' | 'patients'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+
+  // Search states for Rural Doctors and Patients
+  const [rdSearchQuery, setRdSearchQuery] = useState('');
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   // States for Admin's Rural Doctor Registration Engine
   const [rdName, setRdName] = useState('');
@@ -279,6 +285,28 @@ const AdminDashboard: React.FC<{
   const [isCreatingRD, setIsCreatingRD] = useState(false);
   const [createdRDSuccess, setCreatedRDSuccess] = useState<{ name: string, phone: string, pass: string, code: string } | null>(null);
   const [rdError, setRdError] = useState<string | null>(null);
+
+  const filteredRDs = useMemo(() => {
+    const rds = profiles.filter(p => p.role === UserRole.RURAL_DOCTOR);
+    if (!rdSearchQuery.trim()) return rds;
+    const query = rdSearchQuery.toLowerCase().trim();
+    return rds.filter(r => 
+      (r.full_name || '').toLowerCase().includes(query) || 
+      (r.referral_code || '').toLowerCase().includes(query) ||
+      (r.phone || '').includes(query)
+    );
+  }, [profiles, rdSearchQuery]);
+
+  const filteredPatients = useMemo(() => {
+    const pts = profiles.filter(p => p.role === UserRole.PATIENT || (!p.role && p.phone && p.full_name));
+    if (!patientSearchQuery.trim()) return pts;
+    const query = patientSearchQuery.toLowerCase().trim();
+    return pts.filter(p => 
+      (p.full_name || '').toLowerCase().includes(query) || 
+      (p.phone || '').includes(query) ||
+      (p.referred_by_code || '').toLowerCase().includes(query)
+    );
+  }, [profiles, patientSearchQuery]);
 
   const lastRDCode = useMemo(() => {
     const rds = profiles.filter(p => p.role === UserRole.RURAL_DOCTOR);
@@ -312,6 +340,13 @@ const AdminDashboard: React.FC<{
 
     if (!name || !phone || !pass || !code) {
       setRdError('সবগুলো তথ্য বিবরণী সঠিকভাবে পূরণ করুন।');
+      return;
+    }
+
+    // Validate that rural doctor name is in English only (letters, spaces, dots, dashes, parentheses)
+    const isEnglish = /^[A-Za-z0-9\s.,()'-]+$/.test(name);
+    if (!isEnglish) {
+      setRdError('পল্লী চিকিৎসকের নাম অবশ্যই ইংরেজিতে (English) হতে হবে। বাংলায় বা অন্য কোনো অক্ষরে নাম গ্রহণযোগ্য নয়।');
       return;
     }
 
@@ -413,7 +448,8 @@ const AdminDashboard: React.FC<{
           { id: 'orders', label: 'Booking Orders', icon: <MessageSquare size={14} /> },
           { id: 'hospitals', label: 'Clinics', icon: <Microscope size={14} /> },
           { id: 'labtests', label: 'Manage Lab Tests', icon: <FileText size={14} /> },
-          { id: 'referrals', label: 'Rural Doctors', icon: <BadgeCheck size={14} className="text-emerald-500" /> }
+          { id: 'referrals', label: 'Rural Doctors', icon: <BadgeCheck size={14} className="text-emerald-500" /> },
+          { id: 'patients', label: 'Patient Search & Serials', icon: <User size={14} className="text-blue-500" /> }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -612,18 +648,22 @@ const AdminDashboard: React.FC<{
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Rural Doctors & Referrals ({profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length})</h2>
             
             {/* Top Stat Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-slate-900 text-white p-6 rounded-[32px] border border-slate-800 shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 text-white p-5 rounded-[28px] border border-slate-800 shadow-md">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">মোট পল্লী চিকিৎসক</p>
-                <p className="text-3xl font-black text-indigo-400">{profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length} জন</p>
+                <p className="text-2xl font-black text-indigo-400">{profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length} জন</p>
               </div>
-              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+              <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">মোট নিবন্ধিত রোগী</p>
-                <p className="text-3xl font-black text-slate-800">{profiles.filter(p => p.role === UserRole.PATIENT).length} জন</p>
+                <p className="text-2xl font-black text-slate-800">{profiles.filter(p => p.role === UserRole.PATIENT).length} জন</p>
               </div>
-              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+              <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">রেফার করা সিরিয়াল</p>
-                <p className="text-3xl font-black text-teal-600">{appointments.filter(a => a.referred_by_code).length} / {appointments.length} বার</p>
+                <p className="text-2xl font-black text-teal-600">{appointments.filter(a => a.referred_by_code).length} বার</p>
+              </div>
+              <div className="bg-white p-5 rounded-[28px] border-2 border-emerald-100 bg-emerald-50/20 shadow-sm">
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">ডাক্তার দেখিয়েছেন (সফল)</p>
+                <p className="text-2xl font-black text-emerald-700">{appointments.filter(a => a.referred_by_code && a.status === 'visited').length} জন</p>
               </div>
             </div>
 
@@ -747,14 +787,37 @@ const AdminDashboard: React.FC<{
                   <span className="text-[10px] font-black text-slate-400 uppercase">Realtime Sync</span>
                 </div>
 
-                {profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length === 0 ? (
+                {/* Rural Doctor Search Bar */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="🔍 পল্লী চিকিৎসকের নাম, কোড বা মোবাইল নম্বর দিয়ে খুঁজুন..."
+                    value={rdSearchQuery}
+                    onChange={(e) => setRdSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 pl-10 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800"
+                  />
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                    🔍
+                  </span>
+                  {rdSearchQuery && (
+                    <button 
+                      type="button"
+                      onClick={() => setRdSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded-md uppercase transition-all"
+                    >
+                      CLEAR
+                    </button>
+                  )}
+                </div>
+
+                {filteredRDs.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 space-y-2">
                     <p className="text-xs font-black uppercase tracking-wider">কোনো পল্লী চিকিৎসক পাওয়া যায়নি</p>
-                    <p className="text-[10px]">বামপাশের ফরম ব্যবহার করে প্রথম পল্লী চিকিৎসকের প্রোফাইল ও কোড তৈরি করুন।</p>
+                    <p className="text-[10px]">আপনার খোঁজা নাম বা কোডের সাথে মিলছে এমন কোনো পল্লী চিকিৎসক নেই।</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
-                    {profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).map((docInfo, idx) => {
+                    {filteredRDs.map((docInfo, idx) => {
                       const referredPList = profiles.filter(p => p.referred_by_code === docInfo.referral_code);
                       const referredAppList = appointments.filter(a => a.referred_by_code === docInfo.referral_code);
                       const isExpanded = expandedDocId === docInfo.id;
@@ -781,14 +844,20 @@ const AdminDashboard: React.FC<{
                             </div>
                             
                             {/* Stat chips */}
-                            <div className="flex gap-2">
-                              <div className="bg-slate-50/85 px-4 py-2 rounded-2xl border border-slate-100 min-w-[100px] text-center">
+                            <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                              <div className="bg-slate-50/85 px-3 py-2 rounded-2xl border border-slate-100 min-w-[85px] text-center">
                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">নিবন্ধিত রোগী</p>
                                 <p className="text-xs font-extrabold text-slate-800 mt-1">{referredPList.length} জন</p>
                               </div>
-                              <div className="bg-emerald-50/30 px-4 py-2 rounded-2xl border border-emerald-100 min-w-[100px] text-center">
+                              <div className="bg-emerald-50/30 px-3 py-2 rounded-2xl border border-emerald-100 min-w-[85px] text-center">
                                 <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none">কোড বুকিং</p>
                                 <p className="text-xs font-extrabold text-emerald-700 mt-1">{referredAppList.length} বার</p>
+                              </div>
+                              <div className="bg-teal-50/50 px-3 py-2 rounded-2xl border border-teal-100 min-w-[95px] text-center">
+                                <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest leading-none">ডাক্তার দেখিয়েছেন</p>
+                                <p className="text-xs font-extrabold text-teal-700 mt-1">
+                                  {referredAppList.filter(a => a.status === 'visited').length} জন
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -841,9 +910,13 @@ const AdminDashboard: React.FC<{
                                             <p className="text-[9px] text-blue-600 font-bold uppercase">{app.doctor_specialty}</p>
                                           </div>
                                           <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                            app.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                                            app.status === 'visited' 
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                              : app.status === 'absent'
+                                                ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                : 'bg-amber-50 text-amber-700 border border-amber-100'
                                           }`}>
-                                            {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                            {app.status === 'visited' ? 'ডাক্তার দেখিয়েছেন' : app.status === 'absent' ? 'আসেননি/ক্যান্সেল' : 'পেন্ডিং'}
                                           </span>
                                         </div>
                                         <div className="text-[9px] text-slate-500 font-bold space-y-0.5 bg-slate-50 p-2 rounded-lg">
@@ -851,6 +924,42 @@ const AdminDashboard: React.FC<{
                                           <p>📱 ফোন: {app.patient_phone}</p>
                                           <p>📅 তারিখ: {app.date}</p>
                                           {app.problems && <p className="italic text-slate-400">🩺 সমস্যা: "{app.problems}"</p>}
+                                        </div>
+                                        
+                                        {/* Status Update Actions */}
+                                        <div className="flex gap-1 pt-1.5 border-t border-slate-100">
+                                          <button
+                                            type="button"
+                                            onClick={() => onUpdateAppointmentStatus?.(app.id, 'visited')}
+                                            className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
+                                              app.status === 'visited'
+                                                ? 'bg-emerald-600 text-white font-extrabold'
+                                                : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700'
+                                            }`}
+                                          >
+                                            ✓ দেখিয়েছেন
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => onUpdateAppointmentStatus?.(app.id, 'absent')}
+                                            className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
+                                              app.status === 'absent'
+                                                ? 'bg-rose-600 text-white font-extrabold'
+                                                : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700'
+                                            }`}
+                                          >
+                                            ✕ আসেননি
+                                          </button>
+                                          {app.status !== 'pending' && (
+                                            <button
+                                              type="button"
+                                              onClick={() => onUpdateAppointmentStatus?.(app.id, 'pending')}
+                                              className="px-1.5 py-1 rounded text-[8px] font-black bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all"
+                                              title="রিসেট"
+                                            >
+                                              Reset
+                                            </button>
+                                          )}
                                         </div>
                                       </div>
                                     ))}
@@ -864,6 +973,251 @@ const AdminDashboard: React.FC<{
                     })}
                   </div>
                 )}
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'patients' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 text-left">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">রোগী অনুসন্ধান ও সিরিয়াল হিস্ট্রি</h2>
+                <p className="text-xs text-slate-500 font-bold mt-1">প্ল্যাটফর্মের সকল রোগীর প্রোফাইল, পাসওয়ার্ড ও তাদের বুক করা সিরিয়ালের তালিকা ট্র্যাকিং করুন।</p>
+              </div>
+              <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-2xl border border-blue-100 text-xs font-black">
+                মোট নিবন্ধিত রোগী: {profiles.filter(p => p.role === UserRole.PATIENT || !p.role).length} জন
+              </div>
+            </div>
+
+            {/* Patient Panel Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* Left Column: Search & Results List */}
+              <div className="lg:col-span-5 bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-extrabold">রোগী খুঁজুন</h3>
+                  
+                  {/* Search input */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="🔍 রোগীর নাম, ফোন নম্বর বা রেফারেল কোড দিন..."
+                      value={patientSearchQuery}
+                      onChange={(e) => setPatientSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 pl-10 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800"
+                    />
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                      🔍
+                    </span>
+                    {patientSearchQuery && (
+                      <button 
+                        type="button"
+                        onClick={() => setPatientSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded-md uppercase transition-all"
+                      >
+                        CLEAR
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-2 no-scrollbar space-y-2">
+                  {filteredPatients.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400">
+                      <p className="text-xs font-black uppercase tracking-wider">কোনো রোগী পাওয়া যায়নি</p>
+                      <p className="text-[10px]">সঠিক নাম, ১১ ডিজিটের মোবাইল নম্বর বা রেফারেল কোড দিন।</p>
+                    </div>
+                  ) : (
+                    filteredPatients.map((pat, idx) => {
+                      const isSelected = selectedPatientId === pat.id;
+                      const patAppsCount = appointments.filter(a => a.patient_id === pat.id || a.patient_phone === pat.phone).length;
+                      
+                      return (
+                        <div 
+                          key={pat.id || idx}
+                          onClick={() => setSelectedPatientId(pat.id)}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer text-left flex justify-between items-center ${
+                            isSelected 
+                              ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/10' 
+                              : 'bg-slate-50 hover:bg-slate-100/70 border-slate-100 text-slate-800'
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            <h4 className="font-extrabold text-xs">{pat.full_name}</h4>
+                            <p className={`text-[10px] font-bold ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
+                              📱 {pat.phone || 'N/A'}
+                            </p>
+                            {pat.referred_by_code && (
+                              <span className={`inline-block text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                isSelected ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'
+                              }`}>
+                                Ref: {pat.referred_by_code}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/60 text-slate-600 font-bold'
+                            }`}>
+                              {patAppsCount} সিরিয়াল
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Profile details and appointment history */}
+              <div className="lg:col-span-7 bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm space-y-6">
+                {(() => {
+                  const pat = profiles.find(p => p.id === selectedPatientId);
+                  if (!pat) {
+                    return (
+                      <div className="py-24 text-center text-slate-400 space-y-3">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-slate-50 rounded-2xl text-slate-300">
+                          <User size={24} />
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-wider">কোনো রোগীকে নির্বাচন করা হয়নি</p>
+                        <p className="text-[10px] max-w-xs mx-auto">বামপাশের তালিকা থেকে যেকোনো রোগীর উপর ক্লিক করে তার সম্পূর্ণ প্রোফাইল তথ্য, পাসওয়ার্ড এবং পূর্বের ডক্টর অ্যাপয়েন্টমেন্টের ইতিহাস দেখুন।</p>
+                      </div>
+                    );
+                  }
+
+                  const patApps = appointments.filter(a => a.patient_id === pat.id || a.patient_phone === pat.phone);
+                  const recommender = pat.referred_by_code 
+                    ? profiles.find(p => p.role === UserRole.RURAL_DOCTOR && p.referral_code?.trim().toUpperCase() === pat.referred_by_code?.trim().toUpperCase())
+                    : null;
+
+                  return (
+                    <div className="space-y-6 animate-in fade-in duration-200">
+                      
+                      {/* Patient profile details card */}
+                      <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 rounded-[28px] relative overflow-hidden shadow-lg text-left">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
+                        
+                        <div className="relative z-10 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-[8px] font-black bg-indigo-500 text-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Patient ID Profile</span>
+                              <h3 className="font-extrabold text-base mt-1.5">{pat.full_name}</h3>
+                            </div>
+                            <span className="text-[9px] font-black bg-emerald-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider">Active</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10 text-xs text-left">
+                            <div className="space-y-0.5">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">মোবাইল নম্বর (ইউজারনেম)</p>
+                              <p className="font-mono font-bold text-slate-100">{pat.phone || 'N/A'}</p>
+                            </div>
+                            <div className="space-y-0.5 text-left">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">লগইন পাসওয়ার্ড (PIN)</p>
+                              <p className="font-mono font-bold text-slate-100 bg-white/10 px-2 py-0.5 rounded w-fit">{pat.created_password || pat.password || '123456'}</p>
+                            </div>
+                          </div>
+
+                          {pat.referred_by_code && (
+                            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-left">
+                              <div>
+                                <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">নিবন্ধিত হয়েছেন যার মাধ্যমে (Rural Doctor)</p>
+                                <p className="font-extrabold text-indigo-100 mt-0.5">
+                                  👨‍⚕️ {recommender ? recommender.full_name : 'অজানা পল্লী চিকিৎসক'}
+                                </p>
+                              </div>
+                              <span className="bg-indigo-600 text-white font-mono text-[9px] font-black px-2.5 py-1 rounded-xl">
+                                Code: {pat.referred_by_code}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Consultation History timeline */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest font-extrabold flex items-center justify-between">
+                          <span>🩺 ডাক্তারের সিরিয়াল বুকিং সমূহ ({patApps.length} বার)</span>
+                          <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-full uppercase">Serials</span>
+                        </h4>
+
+                        {patApps.length === 0 ? (
+                          <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 text-center">
+                            <p className="text-[10px] text-slate-400 font-extrabold uppercase italic">এই রোগী এখনও কোনো সিরিয়াল বুক করেননি।</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 no-scrollbar text-left">
+                            {patApps.map((app, appIdx) => (
+                              <div 
+                                key={app.id || appIdx}
+                                className="bg-slate-50/70 hover:bg-slate-50 p-4 rounded-2xl border border-slate-100/80 text-left space-y-2 animate-in fade-in zoom-in-95 duration-200"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="font-extrabold text-xs text-slate-800">👨‍⚕️ {app.doctor_name}</h5>
+                                    <p className="text-[9px] text-blue-600 font-black uppercase mt-0.5">{app.doctor_specialty}</p>
+                                  </div>
+                                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-xl uppercase tracking-wider ${
+                                    app.status === 'visited' 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                      : app.status === 'absent'
+                                        ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                        : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                  }`}>
+                                    {app.status === 'visited' ? 'ডাক্তার দেখিয়েছেন' : app.status === 'absent' ? 'আসেননি/ক্যান্সেল' : 'পেন্ডিং'}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-bold bg-white p-3 rounded-xl border border-slate-100/60 space-y-0.5 text-left">
+                                  <p>📅 দেখানোর তারিখ: <span className="text-slate-800 font-extrabold">{app.date}</span></p>
+                                  <p>🏥 জেলা/চেম্বার: <span className="text-slate-700">{app.clinic_name || app.chamber_name || 'N/A'}</span></p>
+                                  {app.problems && <p className="italic text-slate-400 mt-1">🩺 সমস্যা: "{app.problems}"</p>}
+                                </div>
+
+                                {/* Status Update Actions */}
+                                <div className="flex gap-1.5 pt-1.5 border-t border-slate-100">
+                                  <button
+                                    type="button"
+                                    onClick={() => onUpdateAppointmentStatus?.(app.id, 'visited')}
+                                    className={`flex-1 py-1.5 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
+                                      app.status === 'visited'
+                                        ? 'bg-emerald-600 text-white font-extrabold'
+                                        : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700'
+                                    }`}
+                                  >
+                                    ✓ দেখিয়েছেন
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onUpdateAppointmentStatus?.(app.id, 'absent')}
+                                    className={`flex-1 py-1.5 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
+                                      app.status === 'absent'
+                                        ? 'bg-rose-600 text-white font-extrabold'
+                                        : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700'
+                                    }`}
+                                  >
+                                    ✕ আসেননি
+                                  </button>
+                                  {app.status !== 'pending' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onUpdateAppointmentStatus?.(app.id, 'pending')}
+                                      className="px-2.5 py-1.5 rounded-xl text-[9px] font-black bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all"
+                                      title="রিসেট"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
@@ -1552,6 +1906,22 @@ export default function App() {
       setAllAppointments(appRes.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (error) {
       console.error("Admin fetch error:", error);
+    }
+  };
+
+  const handleUpdateAppointmentStatus = async (appId: string, status: 'pending' | 'visited' | 'absent') => {
+    if (!user || profile?.role !== UserRole.ADMIN) {
+      alert("অ্যাডমিন পারমিশন নেই।");
+      return;
+    }
+    try {
+      const appRef = doc(db, 'appointments', appId);
+      await updateDoc(appRef, { status });
+      await fetchAdminData();
+      await fetchData();
+    } catch (err: any) {
+      console.error("Error updating appointment status:", err);
+      alert("সিরিয়াল স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে। এরর: " + err.message);
     }
   };
 
@@ -2251,6 +2621,7 @@ export default function App() {
               }}
               onDelete={handleDeleteData}
               onRefreshAdminData={fetchAdminData}
+              onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
             />
           ) : (
             <>
@@ -2563,18 +2934,24 @@ export default function App() {
                     {profile?.role === UserRole.RURAL_DOCTOR && (
                       <div className="space-y-6 text-left">
                         {/* Stats cards Grid */}
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-3 rounded-[20px] text-center">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-3 rounded-[20px] text-center flex flex-col justify-center">
                             <p className="text-[8px] font-black text-blue-500 uppercase tracking-wider mb-0.5">রেফারেল কোড</p>
                             <p className="text-sm font-black text-blue-900 tracking-wider uppercase">{profile.referral_code}</p>
                           </div>
-                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-3 rounded-[20px] text-center">
-                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5">নিবন্ধিত রোগী</p>
-                            <p className="text-sm font-black text-emerald-950">{referredPatients.length} জন</p>
+                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-3 rounded-[20px] text-center flex flex-col justify-center">
+                            <p className="text-[8px] font-black text-indigo-600 uppercase tracking-wider mb-0.5">নিবন্ধিত রোগী</p>
+                            <p className="text-sm font-black text-indigo-950">{referredPatients.length} জন</p>
                           </div>
-                          <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 p-3 rounded-[20px] text-center">
-                            <p className="text-[8px] font-black text-purple-600 uppercase tracking-wider mb-0.5">রোগীর সিরিয়াল</p>
-                            <p className="text-sm font-black text-purple-950">{referredAppointments.length} বার</p>
+                          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 p-3 rounded-[20px] text-center flex flex-col justify-center">
+                            <p className="text-[8px] font-black text-amber-600 uppercase tracking-wider mb-0.5">রোগীর সিরিয়াল</p>
+                            <p className="text-sm font-black text-amber-950">{referredAppointments.length} বার</p>
+                          </div>
+                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-3 rounded-[20px] text-center flex flex-col justify-center">
+                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5">ডাক্তার দেখিয়েছেন</p>
+                            <p className="text-sm font-black text-emerald-950">
+                              {referredAppointments.filter(app => app.status === 'visited').length} জন
+                            </p>
                           </div>
                         </div>
 
@@ -2630,16 +3007,20 @@ export default function App() {
                           ) : (
                             <div className="space-y-3">
                               {referredAppointments.map((app, idx) => (
-                                <Card key={app.id || idx} className="border-l-4 border-l-emerald-500 bg-white p-4 rounded-2xl space-y-2 text-left shadow-sm animate-in fade-in zoom-in-95 duration-200">
+                                <Card key={app.id || idx} className="border-l-4 border-l-blue-500 bg-white p-4 rounded-2xl space-y-2 text-left shadow-sm animate-in fade-in zoom-in-95 duration-200">
                                   <div className="flex justify-between items-start">
                                     <div>
                                       <h4 className="font-extrabold text-[12px] text-slate-800 leading-tight">👨‍⚕️ {app.doctor_name}</h4>
                                       <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">{app.doctor_specialty}</p>
                                     </div>
                                     <span className={`text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider ${
-                                      app.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                      app.status === 'visited'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : app.status === 'absent'
+                                          ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                          : 'bg-amber-50 text-amber-700 border border-amber-100'
                                     }`}>
-                                      {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                      {app.status === 'visited' ? 'ডাক্তার দেখিয়েছেন' : app.status === 'absent' ? 'আসেননি/ক্যান্সেল' : 'পেন্ডিং'}
                                     </span>
                                   </div>
                                   <div className="text-[10px] font-bold text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -2674,8 +3055,14 @@ export default function App() {
                                     <h4 className="font-extrabold text-sm text-slate-800 leading-tight">{app.doctor_name}</h4>
                                     <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">{app.doctor_specialty}</p>
                                   </div>
-                                  <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-xl uppercase tracking-wider">
-                                    {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                  <span className={`text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider ${
+                                    app.status === 'visited'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : app.status === 'absent'
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {app.status === 'visited' ? 'ডাক্তার দেখিয়েছেন' : app.status === 'absent' ? 'আসেননি/ক্যান্সেল' : 'পেন্ডিং'}
                                   </span>
                                 </div>
                                 <div className="text-[10px] font-bold text-slate-500 space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
