@@ -793,31 +793,70 @@ const AdminDashboard: React.FC<{
                             </div>
                           </div>
 
-                          {/* Expanded Patient Referral List */}
+                          {/* Expanded Patient Referral List & Booking Serials */}
                           {isExpanded && (
-                            <div className="mt-3 ml-6 p-4 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-3">
-                              <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-wider text-left">
-                                📋 {docInfo.full_name}-এর মাধ্যমে নিবন্ধিত রোগী তালিকা ({referredPList.length})
-                              </h5>
-                              {referredPList.length === 0 ? (
-                                <p className="text-[10px] text-slate-400 italic font-semibold text-left">কোনো নিবন্ধিত রোগী নেই</p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {referredPList.map((pat, pidx) => (
-                                    <div key={pat.id || pidx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center text-left">
-                                      <div>
-                                        <p className="font-extrabold text-xs text-slate-800">{pat.full_name}</p>
-                                        <p className="text-[9px] text-slate-500 font-semibold mt-0.5">📱 {pat.phone || 'N/A'}</p>
+                            <div className="mt-3 ml-6 p-5 bg-slate-50/80 rounded-[24px] border border-slate-100/80 space-y-5">
+                              {/* Registered Patients Sub-section */}
+                              <div className="space-y-3">
+                                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-left flex items-center justify-between">
+                                  <span>📋 {docInfo.full_name}-এর নিবন্ধিত রোগী তালিকা ({referredPList.length} জন)</span>
+                                  <span className="bg-indigo-50 text-indigo-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Patients</span>
+                                </h5>
+                                {referredPList.length === 0 ? (
+                                  <p className="text-[10px] text-slate-400 italic font-semibold text-left">কোনো নিবন্ধিত রোগী নেই</p>
+                                ) : (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {referredPList.map((pat, pidx) => (
+                                      <div key={pat.id || pidx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center text-left animate-in fade-in zoom-in-95 duration-200">
+                                        <div>
+                                          <p className="font-extrabold text-xs text-slate-800">{pat.full_name}</p>
+                                          <p className="text-[9px] text-slate-500 font-semibold mt-0.5">📱 {pat.phone || 'N/A'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-[9px] font-bold text-indigo-600">
+                                            🔑 পাসওয়ার্ড: <span className="font-mono bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700">{pat.created_password || pat.password || '123456'}</span>
+                                          </p>
+                                        </div>
                                       </div>
-                                      <div className="text-right">
-                                        <p className="text-[9px] font-bold text-indigo-600">
-                                          🔑 পাসওয়ার্ড: <span className="font-mono bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700">{pat.created_password || pat.password || '123456'}</span>
-                                        </p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Booked Serials Sub-section */}
+                              <div className="space-y-3 pt-3 border-t border-slate-100">
+                                <h5 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest text-left flex items-center justify-between">
+                                  <span>🩺 রোগীদের বুক করা সিরিয়ালসমূহ ({referredAppList.length} বার)</span>
+                                  <span className="bg-emerald-50 text-emerald-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Serials</span>
+                                </h5>
+                                {referredAppList.length === 0 ? (
+                                  <p className="text-[10px] text-slate-400 italic font-semibold text-left">কোনো রোগী এখনো সিরিয়াল বুক করেনি</p>
+                                ) : (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {referredAppList.map((app, appidx) => (
+                                      <div key={app.id || appidx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-2 text-left animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <p className="font-extrabold text-xs text-slate-800">👨‍⚕️ {app.doctor_name}</p>
+                                            <p className="text-[9px] text-blue-600 font-bold uppercase">{app.doctor_specialty}</p>
+                                          </div>
+                                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                            app.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                                          }`}>
+                                            {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                          </span>
+                                        </div>
+                                        <div className="text-[9px] text-slate-500 font-bold space-y-0.5 bg-slate-50 p-2 rounded-lg">
+                                          <p>👤 রোগী: <span className="text-slate-800 font-extrabold">{app.patient_name}</span></p>
+                                          <p>📱 ফোন: {app.patient_phone}</p>
+                                          <p>📅 তারিখ: {app.date}</p>
+                                          {app.problems && <p className="italic text-slate-400">🩺 সমস্যা: "{app.problems}"</p>}
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1203,6 +1242,7 @@ export default function App() {
   const [allAppointments, setAllAppointments] = useState<any[]>([]);
   const [userAppointments, setUserAppointments] = useState<any[]>([]);
   const [referredPatients, setReferredPatients] = useState<any[]>([]);
+  const [referredAppointments, setReferredAppointments] = useState<any[]>([]);
   const [isRegisteringPatientByDoc, setIsRegisteringPatientByDoc] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [hospitals, setHospitals] = useState<Clinic[]>([]);
@@ -1548,12 +1588,27 @@ export default function App() {
 
       // Fetch referred patients for rural doctors
       if (profile.role === UserRole.RURAL_DOCTOR && profile.referral_code) {
+        const refCode = profile.referral_code.trim().toUpperCase();
         const refQuery = query(
           collection(db, 'profiles'),
-          where('referred_by_code', '==', profile.referral_code.trim().toUpperCase())
+          where('referred_by_code', '==', refCode)
         );
         const refSnap = await getDocs(refQuery);
         setReferredPatients(refSnap.docs.map(d => d.data() as Profile));
+
+        // Fetch appointments matching this referral code
+        const refAppQuery = query(
+          collection(db, 'appointments'),
+          where('referred_by_code', '==', refCode)
+        );
+        const refAppSnap = await getDocs(refAppQuery);
+        const refApps = refAppSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        refApps.sort((a: any, b: any) => {
+          const tA = a.created_at?.seconds || 0;
+          const tB = b.created_at?.seconds || 0;
+          return tB - tA;
+        });
+        setReferredAppointments(refApps);
       }
     } catch (error) {
       console.error("User data fetch error:", error);
@@ -2508,14 +2563,18 @@ export default function App() {
                     {profile?.role === UserRole.RURAL_DOCTOR && (
                       <div className="space-y-6 text-left">
                         {/* Stats cards Grid */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-5 rounded-[24px]">
-                            <p className="text-[9px] font-black text-blue-500 uppercase tracking-wider mb-1">রেফারেল কোড</p>
-                            <p className="text-lg font-black text-blue-900 tracking-wider uppercase">{profile.referral_code}</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-3 rounded-[20px] text-center">
+                            <p className="text-[8px] font-black text-blue-500 uppercase tracking-wider mb-0.5">রেফারেল কোড</p>
+                            <p className="text-sm font-black text-blue-900 tracking-wider uppercase">{profile.referral_code}</p>
                           </div>
-                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-5 rounded-[24px]">
-                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider mb-1">নিবন্ধিত রোগী</p>
-                            <p className="text-lg font-black text-emerald-950">{referredPatients.length} জন</p>
+                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-3 rounded-[20px] text-center">
+                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5">নিবন্ধিত রোগী</p>
+                            <p className="text-sm font-black text-emerald-950">{referredPatients.length} জন</p>
+                          </div>
+                          <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 p-3 rounded-[20px] text-center">
+                            <p className="text-[8px] font-black text-purple-600 uppercase tracking-wider mb-0.5">রোগীর সিরিয়াল</p>
+                            <p className="text-sm font-black text-purple-950">{referredAppointments.length} বার</p>
                           </div>
                         </div>
 
@@ -2552,6 +2611,43 @@ export default function App() {
                                   <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 uppercase px-2 py-1 rounded-xl">
                                     নথিভূক্ত
                                   </span>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Referred Patients Appointment Serials list */}
+                        <div className="space-y-4 pt-4 border-t border-slate-100">
+                          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-extrabold flex items-center justify-between">
+                            <span>রোগীদের বুক করা সিরিয়ালসমূহ ({referredAppointments.length})</span>
+                            <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider">Serials</span>
+                          </h3>
+                          {referredAppointments.length === 0 ? (
+                            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 text-center">
+                              <p className="text-[10px] text-slate-400 font-extrabold uppercase italic">আপনার কোনো রোগী এখনও সিরিয়াল বুকিং করেনি।</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {referredAppointments.map((app, idx) => (
+                                <Card key={app.id || idx} className="border-l-4 border-l-emerald-500 bg-white p-4 rounded-2xl space-y-2 text-left shadow-sm animate-in fade-in zoom-in-95 duration-200">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h4 className="font-extrabold text-[12px] text-slate-800 leading-tight">👨‍⚕️ {app.doctor_name}</h4>
+                                      <p className="text-[9px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">{app.doctor_specialty}</p>
+                                    </div>
+                                    <span className={`text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider ${
+                                      app.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                    }`}>
+                                      {app.status === 'pending' ? 'পেন্ডিং' : 'সম্পন্ন'}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] font-bold text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <p className="text-slate-700 font-semibold">👤 রোগীর নাম: <span className="font-extrabold text-slate-900">{app.patient_name}</span></p>
+                                    <p>📱 ফোন নম্বর: <span className="font-mono">{app.patient_phone}</span></p>
+                                    <p>📅 দেখানোর তারিখ: {app.date}</p>
+                                    {app.problems && <p>🩺 সমস্যা: <span className="font-medium text-slate-500 italic">"{app.problems}"</span></p>}
+                                  </div>
                                 </Card>
                               ))}
                             </div>
