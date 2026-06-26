@@ -822,8 +822,12 @@ const AdminDashboard: React.FC<{
                 ) : (
                   <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
                     {filteredRDs.map((docInfo, idx) => {
-                      const referredPList = profiles.filter(p => p.referred_by_code === docInfo.referral_code);
-                      const referredAppList = appointments.filter(a => a.referred_by_code === docInfo.referral_code);
+                      const referredPList = profiles.filter(p => 
+                        (p.referred_by_code || '').trim().toUpperCase() === (docInfo.referral_code || '').trim().toUpperCase()
+                      );
+                      const referredAppList = appointments.filter(a => 
+                        (a.referred_by_code || '').trim().toUpperCase() === (docInfo.referral_code || '').trim().toUpperCase()
+                      );
                       const isExpanded = expandedDocId === docInfo.id;
                       
                       return (
@@ -1968,10 +1972,16 @@ export default function App() {
 
       // Fetch referred patients for rural doctors
       if (profile.role === UserRole.RURAL_DOCTOR && profile.referral_code) {
-        const refCode = profile.referral_code.trim().toUpperCase();
+        const refCodeRaw = profile.referral_code.trim();
+        const refCodeVariations = Array.from(new Set([
+          refCodeRaw.toUpperCase(),
+          refCodeRaw.toLowerCase(),
+          refCodeRaw
+        ]));
+        
         const refQuery = query(
           collection(db, 'profiles'),
-          where('referred_by_code', '==', refCode)
+          where('referred_by_code', 'in', refCodeVariations)
         );
         const refSnap = await getDocs(refQuery);
         setReferredPatients(refSnap.docs.map(d => d.data() as Profile));
@@ -1979,7 +1989,7 @@ export default function App() {
         // Fetch appointments matching this referral code
         const refAppQuery = query(
           collection(db, 'appointments'),
-          where('referred_by_code', '==', refCode)
+          where('referred_by_code', 'in', refCodeVariations)
         );
         const refAppSnap = await getDocs(refAppQuery);
         const refApps = refAppSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -2573,6 +2583,14 @@ export default function App() {
     }
   };
 
+  const handleBookingSuccess = () => {
+    if (profile?.role === UserRole.ADMIN) {
+      fetchAdminData();
+    } else {
+      fetchUserData();
+    }
+  };
+
   if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-blue-600 animate-pulse uppercase tracking-[0.3em]">Nilpha...</div>;
 
   const HOTLINE_CONTACT = "01352669100";
@@ -2593,6 +2611,7 @@ export default function App() {
         doctorName={bookingDoctor?.name || ''} 
         doctorSpecialty={bookingDoctor?.specialty || ''} 
         hotline={HOTLINE_CONTACT} 
+        onSuccess={handleBookingSuccess}
       />
 
       <Routes>
@@ -3141,6 +3160,7 @@ export default function App() {
           doctorName={bookingDoctor.name}
           doctorSpecialty={bookingDoctor.specialty}
           hotline={HOTLINE_CONTACT}
+          onSuccess={handleBookingSuccess}
         />
       )}
 

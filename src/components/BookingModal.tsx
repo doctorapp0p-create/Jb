@@ -12,9 +12,10 @@ interface BookingModalProps {
   doctorName: string;
   doctorSpecialty: string;
   hotline: string;
+  onSuccess?: () => void;
 }
 
-export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doctorName, doctorSpecialty, hotline }) => {
+export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doctorName, doctorSpecialty, hotline, onSuccess }) => {
   const [user, setUser] = useState(auth.currentUser);
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -34,10 +35,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
 
       if (profile.referred_by_code) {
         try {
+          const refCodeRaw = profile.referred_by_code.trim();
+          const refCodeVariations = Array.from(new Set([
+            refCodeRaw.toUpperCase(),
+            refCodeRaw.toLowerCase(),
+            refCodeRaw
+          ]));
+
           const q = query(
             collection(db, 'profiles'),
             where('role', '==', 'RURAL_DOCTOR'),
-            where('referral_code', '==', profile.referred_by_code.trim().toUpperCase())
+            where('referral_code', 'in', refCodeVariations)
           );
           const snap = await getDocs(q);
           if (!snap.empty) {
@@ -255,13 +263,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
       const appRecord = {
         patient_id: user.uid,
         patient_name: formData.name,
+        patient_age: formData.age,
+        patient_address: formData.address,
         patient_phone: formData.phone,
         doctor_name: doctorName,
         doctor_specialty: doctorSpecialty,
         date: formData.date,
         problems: formData.problem || 'উল্লিখিত নেই',
         status: 'pending',
-        referred_by_code: referralCode,
+        referred_by_code: referralCode.trim().toUpperCase(),
         referred_by_name: refDocNameVal,
         created_at: serverTimestamp(),
       };
@@ -285,6 +295,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
       }
       
       window.open(`https://wa.me/${formattedHotline}?text=${encodedMessage}`, '_blank');
+      if (onSuccess) {
+        onSuccess();
+      }
       onClose();
     } catch (dbErr) {
       console.error("Error creating appointment in database:", dbErr);
