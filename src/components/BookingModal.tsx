@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, MessageSquare, User, Calendar, MapPin, Phone, Activity, ArrowRight, Lock, Mail, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '../../services/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { toVirtualEmail } from '../../utils';
 
 interface BookingModalProps {
@@ -18,6 +18,45 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
   const [user, setUser] = useState(auth.currentUser);
   const [profile, setProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [referredDocName, setReferredDocName] = useState('');
+
+  useEffect(() => {
+    const fetchReferredDocName = async () => {
+      if (!profile) {
+        setReferredDocName('');
+        return;
+      }
+
+      if (profile.role === 'RURAL_DOCTOR') {
+        setReferredDocName(profile.full_name || '');
+        return;
+      }
+
+      if (profile.referred_by_code) {
+        try {
+          const q = query(
+            collection(db, 'profiles'),
+            where('role', '==', 'RURAL_DOCTOR'),
+            where('referral_code', '==', profile.referred_by_code.trim().toUpperCase())
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const rdProfile = snap.docs[0].data();
+            setReferredDocName(rdProfile.full_name || '');
+          } else {
+            setReferredDocName('');
+          }
+        } catch (err) {
+          console.error("Error fetching referred doc profile:", err);
+          setReferredDocName('');
+        }
+      } else {
+        setReferredDocName('');
+      }
+    };
+
+    fetchReferredDocName();
+  }, [profile]);
 
   // Booking Form State
   const [formData, setFormData] = useState({
@@ -59,11 +98,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
           if (docSnap.exists()) {
             const profData = docSnap.data();
             setProfile(profData);
-            setFormData(prev => ({
-              ...prev,
-              name: prev.name || u.displayName || profData.full_name || '',
-              phone: prev.phone || profData.phone || ''
-            }));
+            if (profData.role === 'RURAL_DOCTOR') {
+              setFormData(prev => ({
+                ...prev,
+                name: '',
+                phone: '',
+                age: '',
+                address: '',
+                problem: '',
+                date: ''
+              }));
+            } else {
+              setFormData(prev => ({
+                ...prev,
+                name: prev.name || u.displayName || profData.full_name || '',
+                phone: prev.phone || profData.phone || ''
+              }));
+            }
           } else {
             const tempProf = {
               id: u.uid,
@@ -196,7 +247,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
     }
 
     try {
-      const referralCode = profile?.referred_by_code || '';
+      const referralCode = profile?.role === 'RURAL_DOCTOR' ? (profile?.referral_code || '') : (profile?.referred_by_code || '');
+      const refDocNameVal = referredDocName || (profile?.role === 'RURAL_DOCTOR' ? (profile?.full_name || '') : '');
 
       // Create appointment record in Firestore
       const appointmentRef = collection(db, 'appointments');
@@ -207,17 +259,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
         doctor_name: doctorName,
         doctor_specialty: doctorSpecialty,
         date: formData.date,
-        problems: formData.problem,
+        problems: formData.problem || 'উল্লিখিত নেই',
         status: 'pending',
         referred_by_code: referralCode,
+        referred_by_name: refDocNameVal,
         created_at: serverTimestamp(),
       };
       await addDoc(appointmentRef, appRecord);
 
       // WhatsApp message structure
-      let message = `*নতুন সিরিয়াল বুকিং*\n\nডাক্তার: ${doctorName}\nবিশেষজ্ঞ: ${doctorSpecialty}\n------------------\nরোগীর নাম: ${formData.name}\nবয়স: ${formData.age}\nবাসা: ${formData.address}\nকি সমস্যা: ${formData.problem}\nকবে দেখাবে: ${formData.date}\nফোন নাম্বার: ${formData.phone}\n`;
+      let message = `*নতুন সিরিয়াল বুকিং*\n\nডাক্তার: ${doctorName}\nবিশেষজ্ঞ: ${doctorSpecialty}\n------------------\nরোগীর নাম: ${formData.name}\nবয়স: ${formData.age}\nবাসা: ${formData.address}\nকি সমস্যা: ${formData.problem || 'উল্লিখিত নেই'}\nকবে দেখাবে: ${formData.date}\nফোন নাম্বার: ${formData.phone}\n`;
       if (referralCode) {
-        message += `রেফারেল কোড: ${referralCode}\n`;
+        message += `পল্লী চিকিৎসক: ${refDocNameVal || 'জানা নেই'} (কোড: ${referralCode})\n`;
       }
       message += `------------------\nNilpha.com এর মাধ্যমে পাঠানো হয়েছে।`;
       
@@ -450,14 +503,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
                 
                 <div className="space-y-2">
                   <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 ml-1">
-                    <MessageSquare size={12} className="text-blue-500" /> কি সমস্যা?
+                    <MessageSquare size={12} className="text-blue-500" /> কি সমস্যা? (ঐচ্ছিক)
                   </label>
                   <textarea 
-                    required 
                     value={formData.problem} 
                     onChange={e => setFormData({...formData, problem: e.target.value})} 
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-h-[100px] resize-none" 
-                    placeholder="আপনার সমস্যার কথা সংক্ষেপে লিখুন"
+                    placeholder="আপনার সমস্যার কথা সংক্ষেপে লিখুন (না লিখলেও চলবে)"
                   />
                 </div>
                 
