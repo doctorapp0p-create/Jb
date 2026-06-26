@@ -21,25 +21,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [referredDocName, setReferredDocName] = useState('');
 
+  // Booking Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    address: '',
+    problem: '',
+    date: '',
+    phone: '',
+    referredByCode: '',
+  });
+
   useEffect(() => {
     const fetchReferredDocName = async () => {
-      if (!profile) {
-        setReferredDocName('');
-        return;
-      }
+      const activeCode = (formData.referredByCode || (profile && profile.role !== 'RURAL_DOCTOR' ? profile.referred_by_code : '') || '').trim().toUpperCase();
 
-      if (profile.role === 'RURAL_DOCTOR') {
+      if (profile && profile.role === 'RURAL_DOCTOR') {
         setReferredDocName(profile.full_name || '');
         return;
       }
 
-      if (profile.referred_by_code) {
+      if (activeCode) {
         try {
-          const refCodeRaw = profile.referred_by_code.trim();
           const refCodeVariations = Array.from(new Set([
-            refCodeRaw.toUpperCase(),
-            refCodeRaw.toLowerCase(),
-            refCodeRaw
+            activeCode.toUpperCase(),
+            activeCode.toLowerCase(),
+            activeCode
           ]));
 
           const q = query(
@@ -64,17 +71,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
     };
 
     fetchReferredDocName();
-  }, [profile]);
-
-  // Booking Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    address: '',
-    problem: '',
-    date: '',
-    phone: '',
-  });
+  }, [profile, formData.referredByCode]);
 
   // Auth Form State
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
@@ -114,13 +111,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
                 age: '',
                 address: '',
                 problem: '',
-                date: ''
+                date: '',
+                referredByCode: profData.referral_code || ''
               }));
             } else {
               setFormData(prev => ({
                 ...prev,
                 name: prev.name || u.displayName || profData.full_name || '',
-                phone: prev.phone || profData.phone || ''
+                phone: prev.phone || profData.phone || '',
+                referredByCode: profData.referred_by_code || localStorage.getItem('prefilled_referral_code') || ''
               }));
             }
           } else {
@@ -135,7 +134,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
             setFormData(prev => ({
               ...prev,
               name: prev.name || u.displayName || '',
-              phone: ''
+              phone: '',
+              referredByCode: localStorage.getItem('prefilled_referral_code') || ''
             }));
           }
         } catch (err) {
@@ -255,8 +255,29 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
     }
 
     try {
-      const referralCode = profile?.role === 'RURAL_DOCTOR' ? (profile?.referral_code || '') : (profile?.referred_by_code || '');
+      let referralCode = '';
+      if (profile?.role === 'RURAL_DOCTOR') {
+        referralCode = (profile?.referral_code || '').trim().toUpperCase();
+      } else {
+        referralCode = (formData.referredByCode || profile?.referred_by_code || '').trim().toUpperCase();
+      }
+
       const refDocNameVal = referredDocName || (profile?.role === 'RURAL_DOCTOR' ? (profile?.full_name || '') : '');
+
+      // Update patient's profile in Firestore if they modified the code and are a Patient
+      if (profile && profile.role !== 'RURAL_DOCTOR' && referralCode) {
+        const currentProfileCode = (profile.referred_by_code || '').trim().toUpperCase();
+        if (referralCode !== currentProfileCode) {
+          try {
+            const userProfileRef = doc(db, 'profiles', user.uid);
+            await setDoc(userProfileRef, { referred_by_code: referralCode }, { merge: true });
+            // Update local profile state as well
+            setProfile((prev: any) => ({ ...prev, referred_by_code: referralCode }));
+          } catch (profileUpdateErr) {
+            console.error("Error updating profile referral code during booking:", profileUpdateErr);
+          }
+        }
+      }
 
       // Create appointment record in Firestore
       const appointmentRef = collection(db, 'appointments');
@@ -271,7 +292,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
         date: formData.date,
         problems: formData.problem || 'উল্লিখিত নেই',
         status: 'pending',
-        referred_by_code: referralCode.trim().toUpperCase(),
+        referred_by_code: referralCode,
         referred_by_name: refDocNameVal,
         created_at: serverTimestamp(),
       };
@@ -525,6 +546,45 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, doc
                     placeholder="আপনার সমস্যার কথা সংক্ষেপে লিখুন (না লিখলেও চলবে)"
                   />
                 </div>
+
+                {/* Rural Doctor Referral Code Field */}
+                {profile?.role === 'RURAL_DOCTOR' ? (
+                  <div className="space-y-2 bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
+                    <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-blue-600 ml-1">
+                      রেফারেল কোড (আপনার নিজের)
+                    </label>
+                    <p className="text-xs font-black text-blue-900 bg-white border border-blue-100 px-3 py-2 rounded-xl inline-block">
+                      {profile.referral_code || 'RD001'}
+                    </p>
+                    <p className="text-[9px] text-blue-500 font-bold">পল্লী চিকিৎসক হিসেবে রোগীকে সরাসরি সিরিয়াল দিচ্ছেন।</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 ml-1">
+                      পল্লী চিকিৎসক কোড (ঐচ্ছিক)
+                    </label>
+                    <input 
+                      type="text"
+                      placeholder="যেমন: RD001"
+                      value={formData.referredByCode}
+                      onChange={e => setFormData({...formData, referredByCode: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all uppercase"
+                    />
+                    {formData.referredByCode.trim() && (
+                      <div className="mt-1 ml-1">
+                        {referredDocName ? (
+                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            ✔ পল্লী চিকিৎসক: <span className="font-extrabold">{referredDocName}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
+                            ⚠ এই কোডধারী কোনো পল্লী চিকিৎসক পাওয়া যায়নি
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
