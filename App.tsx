@@ -1941,36 +1941,78 @@ export default function App() {
 
   const fetchUserData = async () => {
     if (!profile) return;
+    
+    const getTimestampMs = (val: any): number => {
+      if (!val) return 0;
+      if (typeof val === 'string') {
+        const parsed = Date.parse(val);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      if (typeof val.seconds === 'number') {
+        return val.seconds * 1000;
+      }
+      if (typeof val.toDate === 'function') {
+        return val.toDate().getTime();
+      }
+      return 0;
+    };
+    
+    // 1. Fetch prescriptions
     try {
       const presQuery = query(
         collection(db, 'prescriptions'),
-        where(profile.role === UserRole.DOCTOR ? 'doctor_id' : 'patient_id', '==', user.uid || user.id),
-        orderBy('created_at', 'desc')
+        where(profile.role === UserRole.DOCTOR ? 'doctor_id' : 'patient_id', '==', user.uid || user.id)
       );
+      const presSnap = await getDocs(presQuery);
+      const prescriptions = presSnap.docs.map(d => ({ id: d.id, ...d.data() } as Prescription));
+      prescriptions.sort((a, b) => {
+        const tA = getTimestampMs(a.created_at);
+        const tB = getTimestampMs(b.created_at);
+        return tB - tA;
+      });
+      setAllPrescriptions(prescriptions);
+    } catch (err) {
+      console.error("Prescriptions fetch error:", err);
+    }
+
+    // 2. Fetch orders
+    try {
       const ordersQuery = query(
         collection(db, 'orders'),
-        where('user_id', '==', user.uid || user.id),
-        orderBy('created_at', 'desc')
+        where('user_id', '==', user.uid || user.id)
       );
-      
-      const [presSnap, ordSnap] = await Promise.all([
-        getDocs(presQuery),
-        getDocs(ordersQuery)
-      ]);
-      
-      setAllPrescriptions(presSnap.docs.map(d => ({ id: d.id, ...d.data() } as Prescription)));
-      setAllOrders(ordSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+      const ordSnap = await getDocs(ordersQuery);
+      const orders = ordSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      orders.sort((a, b) => {
+        const tA = getTimestampMs(a.created_at);
+        const tB = getTimestampMs(b.created_at);
+        return tB - tA;
+      });
+      setAllOrders(orders);
+    } catch (err) {
+      console.error("Orders fetch error:", err);
+    }
 
-      // Fetch appointments
+    // 3. Fetch user appointments
+    try {
       const appQuery = query(
         collection(db, 'appointments'),
-        where('patient_id', '==', user.uid || user.id),
-        orderBy('created_at', 'desc')
+        where('patient_id', '==', user.uid || user.id)
       );
       const appSnap = await getDocs(appQuery);
-      setUserAppointments(appSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const apps = appSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      apps.sort((a: any, b: any) => {
+        const tA = getTimestampMs(a.created_at);
+        const tB = getTimestampMs(b.created_at);
+        return tB - tA;
+      });
+      setUserAppointments(apps);
+    } catch (err) {
+      console.error("User appointments fetch error:", err);
+    }
 
-      // Fetch referred patients for rural doctors
+    // 4. Fetch referred patients & appointments for rural doctors
+    try {
       if (profile.role === UserRole.RURAL_DOCTOR && profile.referral_code) {
         const refCodeRaw = profile.referral_code.trim();
         const refCodeVariations = Array.from(new Set([
@@ -1994,14 +2036,14 @@ export default function App() {
         const refAppSnap = await getDocs(refAppQuery);
         const refApps = refAppSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         refApps.sort((a: any, b: any) => {
-          const tA = a.created_at?.seconds || 0;
-          const tB = b.created_at?.seconds || 0;
+          const tA = getTimestampMs(a.created_at);
+          const tB = getTimestampMs(b.created_at);
           return tB - tA;
         });
         setReferredAppointments(refApps);
       }
     } catch (error) {
-      console.error("User data fetch error:", error);
+      console.error("Referred data fetch error:", error);
     }
   };
 
@@ -3153,16 +3195,6 @@ export default function App() {
         } />
       </Routes>
 
-      {bookingDoctor && (
-        <BookingModal 
-          isOpen={showSerialModal}
-          onClose={() => setShowSerialModal(false)}
-          doctorName={bookingDoctor.name}
-          doctorSpecialty={bookingDoctor.specialty}
-          hotline={HOTLINE_CONTACT}
-          onSuccess={handleBookingSuccess}
-        />
-      )}
 
       <AuthModal
         isOpen={showAuthModal}
