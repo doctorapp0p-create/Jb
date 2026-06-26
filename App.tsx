@@ -648,7 +648,7 @@ const AdminDashboard: React.FC<{
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Rural Doctors & Referrals ({profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length})</h2>
             
             {/* Top Stat Cards Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-slate-900 text-white p-5 rounded-[28px] border border-slate-800 shadow-md">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">মোট পল্লী চিকিৎসক</p>
                 <p className="text-2xl font-black text-indigo-400">{profiles.filter(p => p.role === UserRole.RURAL_DOCTOR).length} জন</p>
@@ -664,6 +664,10 @@ const AdminDashboard: React.FC<{
               <div className="bg-white p-5 rounded-[28px] border-2 border-emerald-100 bg-emerald-50/20 shadow-sm">
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">ডাক্তার দেখিয়েছেন (সফল)</p>
                 <p className="text-2xl font-black text-emerald-700">{appointments.filter(a => a.referred_by_code && a.status === 'visited').length} জন</p>
+              </div>
+              <div className="bg-white p-5 rounded-[28px] border-2 border-rose-100 bg-rose-50/20 shadow-sm">
+                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">আসেননি বা রিজেক্ট (ব্যর্থ)</p>
+                <p className="text-2xl font-black text-rose-700">{appointments.filter(a => a.referred_by_code && a.status === 'absent').length} জন</p>
               </div>
             </div>
 
@@ -857,6 +861,12 @@ const AdminDashboard: React.FC<{
                                 <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest leading-none">ডাক্তার দেখিয়েছেন</p>
                                 <p className="text-xs font-extrabold text-teal-700 mt-1">
                                   {referredAppList.filter(a => a.status === 'visited').length} জন
+                                </p>
+                              </div>
+                              <div className="bg-rose-50/50 px-3 py-2 rounded-2xl border border-rose-100 min-w-[95px] text-center">
+                                <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest leading-none">আসেননি/ক্যান্সেল</p>
+                                <p className="text-xs font-extrabold text-rose-700 mt-1">
+                                  {referredAppList.filter(a => a.status === 'absent').length} জন
                                 </p>
                               </div>
                             </div>
@@ -2934,7 +2944,7 @@ export default function App() {
                     {profile?.role === UserRole.RURAL_DOCTOR && (
                       <div className="space-y-6 text-left">
                         {/* Stats cards Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                           <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 p-3 rounded-[20px] text-center flex flex-col justify-center">
                             <p className="text-[8px] font-black text-blue-500 uppercase tracking-wider mb-0.5">রেফারেল কোড</p>
                             <p className="text-sm font-black text-blue-900 tracking-wider uppercase">{profile.referral_code}</p>
@@ -2951,6 +2961,12 @@ export default function App() {
                             <p className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5">ডাক্তার দেখিয়েছেন</p>
                             <p className="text-sm font-black text-emerald-950">
                               {referredAppointments.filter(app => app.status === 'visited').length} জন
+                            </p>
+                          </div>
+                          <div className="bg-gradient-to-br from-rose-50 to-red-50 border border-rose-100 p-3 rounded-[20px] text-center flex flex-col justify-center col-span-2 sm:col-span-1">
+                            <p className="text-[8px] font-black text-rose-600 uppercase tracking-wider mb-0.5">আসেননি / রিজেক্ট</p>
+                            <p className="text-sm font-black text-rose-950">
+                              {referredAppointments.filter(app => app.status === 'absent').length} জন
                             </p>
                           </div>
                         </div>
